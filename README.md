@@ -2,8 +2,6 @@
 
 A mod manager for **Elin**, in the spirit of RimPy and RimSort. It edits the game's own `loadorder.txt`, lets you arrange mods by dragging instead of clicking arrows, edits mod settings without a text editor, and can browse and download from the Steam Workshop.
 
-Also on Nexus Mods: <https://www.nexusmods.com/elin/mods/129>
-
 ## What it does
 
 **Load order**
@@ -89,7 +87,6 @@ Everything is plain, readable text; there's nothing compiled or hidden. In detai
 - **Mods you turn off move to the bottom of `loadorder.txt`.** A disabled mod isn't loaded, so its position doesn't matter. Keeping every enabled mod together at the top is what lets two panes describe one file. It changes nothing about how Elin reads the file.
 - **Close Elin before editing configs.** BepInEx can rewrite them while the game runs.
 - **Mods in `Elin\Package` are yours to manage.** Steam won't update them; use **Check for updates** in Emmin instead.
-- **Old settings carry over.** If you used Emmin back when it was called "Elin Mod Manager", your old `elin_mm_settings.json` is carried over on first launch.
 
 ## Credits
 
