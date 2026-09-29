@@ -1,0 +1,2444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Emmin — Eternal Mod Manager of Nefia</title>
+<style>
+:root{
+  --ground:#171A22; --panel:#1F232D; --panel2:#252A36; --raise:#2C3240;
+  --line:#333A49; --line2:#414A5C;
+  --bone:#E3DDD0; --dim:#8E95A5; --dimmer:#666D7D;
+  --brass:#C9A55C; --verdigris:#6E9B8C; --rust:#B4584E;
+  --row:30px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--bone);overflow:hidden;
+  font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;font-size:13.5px;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+button{background:var(--panel2);border:1px solid var(--line);color:var(--bone);padding:5px 11px;border-radius:3px;cursor:pointer}
+button:hover:not(:disabled){background:var(--raise);border-color:var(--line2)}
+button:disabled{opacity:.38;cursor:default}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+button.primary{background:#3A3222;border-color:#5E4E2E;color:var(--brass)}
+button.primary:hover:not(:disabled){background:#483D28}
+button.danger:hover:not(:disabled){border-color:var(--rust);color:#E09A92}
+input[type=text],input[type=search],input[type=number]{background:#12151C;border:1px solid var(--line);border-radius:3px;padding:5px 9px}
+a{color:var(--verdigris)}
+code,.mono{font-family:Consolas,"Cascadia Mono",Menlo,monospace;font-size:12px}
+
+#app{display:flex;flex-direction:column;height:100%}
+header{border-bottom:1px solid var(--line);background:var(--panel);flex:none}
+.bar{display:flex;align-items:center;gap:8px;padding:8px 12px;flex-wrap:wrap}
+.bar.sub{padding-top:0}
+.brand{display:flex;align-items:baseline;gap:9px;margin-right:6px}
+.brand b{font-weight:600;letter-spacing:.3px}
+.brand span{color:var(--dimmer);font-size:11.5px}
+.spacer{flex:1}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--brass);display:inline-block;margin-right:6px}
+.dot.clean{background:var(--verdigris)}
+#saveState{color:var(--dim);font-size:12px;margin-right:4px}
+
+.chips{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.chips button{border:0;border-radius:0;background:transparent;padding:5px 10px;color:var(--dim)}
+.chips button+button{border-left:1px solid var(--line)}
+.chips button.on{background:var(--raise);color:var(--bone)}
+.chips button b{color:var(--dimmer);font-weight:400;margin-left:5px;font-size:11.5px}
+.chips button.on b{color:var(--brass)}
+
+main{flex:1;display:flex;min-height:0}
+.pane{display:flex;flex-direction:column;min-width:0;min-height:0}
+#offPane{width:300px;flex:none;border-right:1px solid var(--line)}
+#onPane{flex:1}
+#detail{width:310px;flex:none;border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:16px}
+.paneHead{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--line);
+  background:#1B1F28;flex:none;font-size:12px}
+.paneHead b{font-weight:600;font-size:13px}
+.paneHead .sub{color:var(--dimmer)}
+.list{flex:1;overflow:auto;padding-bottom:30vh}
+.list.dropInto{background:#20262F;box-shadow:inset 0 0 0 1px var(--brass)}
+
+.row{display:grid;align-items:center;gap:8px;height:var(--row);padding:0 10px 0 4px;border-bottom:1px solid #1E222C}
+#onPane .row{grid-template-columns:16px 40px 30px minmax(0,1fr) auto 24px 22px}
+#offPane .row{grid-template-columns:16px 30px minmax(0,1fr) auto 24px 22px}
+.row:hover{background:#1D212A}
+.row.sel{background:#2A3140}
+.row.sel .title{color:#fff}
+#offPane .row .title,#offPane .row .ver{color:var(--dim)}
+#offPane .thumb{filter:grayscale(1);opacity:.45}
+.row.missing{background:#2A1C1C}
+.row.missing:hover{background:#332222}
+.row.dragging{opacity:.35}
+.row.dropAbove{box-shadow:inset 0 2px 0 var(--brass)}
+.row.dropBelow{box-shadow:inset 0 -2px 0 var(--brass)}
+.grip{color:#3D4557;cursor:grab;text-align:center;font-size:12px;user-select:none}
+.row:hover .grip{color:var(--dim)}
+.idx{text-align:right;color:var(--dimmer);font-size:11px}
+.row.sel .idx{color:var(--brass)}
+.thumb{width:26px;height:20px;object-fit:cover;border-radius:2px;background:#12151C;border:1px solid #2A303C}
+.thumb.none{border-style:dashed}
+.title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.title .by{color:var(--dimmer);margin-left:7px;font-size:11.5px}
+.meta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dimmer)}
+.ver{color:var(--dim)}
+.tag{border:1px solid var(--line);border-radius:2px;padding:0 5px;color:var(--dim)}
+.flag{border-radius:2px;padding:0 5px;font-size:10.5px;letter-spacing:.4px}
+.flag.new{background:#2D3A32;color:#8FC4AC;border:1px solid #3F5A4B}
+.flag.upd{background:#2A3340;color:#93B4D6;border:1px solid #3E5068}
+.flag.gone{background:#3A2222;color:#E09A92;border:1px solid #5A3838}
+.flag.dup{background:#3A3222;color:var(--brass);border:1px solid #5E4E2E}
+.flag.src{color:var(--dimmer);border:1px solid var(--line)}
+.swap{border:1px solid transparent;background:0;color:#3D4557;padding:0;height:20px;border-radius:3px;font-size:13px;cursor:pointer}
+.row:hover .swap{color:var(--bone);border-color:var(--line);background:var(--panel2)}
+.swap:hover{border-color:var(--brass);color:var(--brass)}
+.kebab{color:#3D4557;text-align:center;cursor:pointer;border:0;background:0;padding:0;line-height:1}
+.row:hover .kebab{color:var(--dim)}
+.kebab:hover{color:var(--bone)}
+.tag.grp{border-color:#5E4E2E;color:var(--brass)}
+.flag.rule{color:#B7A6D9;border:1px solid #4A4260;background:#2B2838}
+.ruleBox{border:1px solid var(--line);border-radius:3px;padding:8px 10px;margin:0 0 14px;color:var(--dim);font-size:12.5px}
+.ruleBox div+div{margin-top:3px}
+.ruleHead{color:var(--bone);font-weight:600;font-size:12px;margin-bottom:5px}
+.modal.wide{width:min(660px,100%)}
+.inline{display:flex;gap:6px;align-items:center}
+.inline input[type=text]{flex:1;min-width:0}
+.newGroup{margin-top:8px}
+select{background:#12151C;border:1px solid var(--line);border-radius:3px;padding:5px 7px;width:100%}
+.refs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:7px;min-height:24px;align-items:center}
+.refChip{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line2);
+  border-radius:3px;padding:2px 3px 2px 8px;max-width:100%}
+.refChip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.refChip small{color:var(--rust)}
+.refChip.faint span{color:var(--dim)}
+.refChip .x{border:0;background:0;padding:0 5px;color:var(--dimmer);line-height:1.2}
+.refChip .x:hover{color:var(--bone)}
+.chips.seg{display:inline-flex}
+.check{display:flex;align-items:center;gap:8px;color:var(--bone);margin-bottom:4px;cursor:pointer}
+.groupTable{margin-top:14px;border-top:1px solid var(--line)}
+.groupRow{display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.groupRow input[type=text]{flex:1;min-width:0}
+.groupRow .hint{width:62px;text-align:right}
+.loop{font-family:Consolas,"Cascadia Mono",Menlo,monospace;font-size:12px;background:#12151C;border:1px solid var(--line);
+  border-left:2px solid var(--brass);border-radius:3px;padding:8px 10px;margin-bottom:8px;overflow-wrap:anywhere}
+/* ---------- view tabs ---------- */
+.tabs{display:flex;gap:2px;background:#12151C;border:1px solid var(--line);border-radius:4px;padding:2px;margin-right:4px}
+.tabs button{border:0;background:0;padding:4px 14px;color:var(--dim);border-radius:3px}
+.tabs button.on{background:var(--raise);color:var(--bone)}
+.tabs button:hover:not(.on){color:var(--bone);background:transparent}
+.tabs button .n{color:var(--dimmer);font-size:11px;margin-left:5px}
+
+/* ---------- config view ---------- */
+#cfgView{flex:1;display:flex;min-height:0}
+#cfgSide{width:290px;flex:none;border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+#cfgSide .paneHead input{width:100%}
+#cfgFiles{flex:1;overflow:auto}
+.cfgFile{padding:8px 12px;border-bottom:1px solid #1E222C;cursor:pointer}
+.cfgFile:hover{background:#1D212A}
+.cfgFile.on{background:#2A3140;box-shadow:inset 2px 0 0 var(--brass)}
+.cfgFile .t{display:flex;align-items:baseline;gap:7px}
+.cfgFile .t b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cfgFile .t .v{color:var(--dimmer);font-size:11px;flex:none}
+.cfgFile .s{color:var(--dimmer);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.cfgFile .s .flag{margin-left:4px}
+.cfgFile .dirtyDot{width:6px;height:6px;border-radius:50%;background:var(--brass);display:inline-block;flex:none;align-self:center}
+#cfgMain{flex:1;min-width:0;overflow:auto}
+.cfgHead{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:14px 22px 12px}
+.cfgHead .top{display:flex;align-items:flex-start;gap:12px}
+.cfgHead h2{margin:0;font-size:18px;font-weight:600;letter-spacing:.2px}
+.cfgHead .sub{color:var(--dim);font-size:12px;margin-top:3px}
+.cfgHead .sub code{color:var(--dimmer)}
+.cfgHead .tools{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.cfgHead .tools input[type=search]{width:240px}
+.cfgNote{color:var(--dimmer);font-size:11.5px;margin-top:8px}
+.cfgBody{padding:18px 22px 40vh;max-width:980px}
+.cfgSection{margin-bottom:22px}
+.cfgSection h3{font-size:12px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--brass);
+  margin:0 0 8px;display:flex;align-items:center;gap:10px}
+.cfgSection h3::after{content:"";flex:1;height:1px;background:var(--line)}
+.cfgCard{background:var(--panel);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.setting{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,300px);gap:18px;padding:13px 16px;
+  border-bottom:1px solid var(--line);align-items:start}
+.setting:last-child{border-bottom:0}
+.setting.changed{box-shadow:inset 3px 0 0 var(--brass);background:#232018}
+.setting.invalid{box-shadow:inset 3px 0 0 var(--rust)}
+.sName{font-weight:600;display:flex;align-items:center;gap:8px}
+.sName .raw{font-family:Consolas,"Cascadia Mono",Menlo,monospace;font-size:11px;color:var(--dimmer);font-weight:400}
+.sDesc{color:var(--dim);margin-top:3px;white-space:pre-wrap;max-width:68ch;font-size:13px}
+.sMeta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:11.5px;color:var(--dimmer)}
+.sMeta .reset{color:var(--verdigris);cursor:pointer;background:0;border:0;padding:0;font-size:11.5px}
+.sMeta .reset:hover{text-decoration:underline}
+.sErr{color:#E09A92;font-size:11.5px;margin-top:5px}
+.sCtl{display:flex;flex-direction:column;gap:6px;align-items:stretch;padding-top:1px}
+.sCtl input[type=text]{width:100%;font-family:Consolas,"Cascadia Mono",Menlo,monospace;font-size:12.5px}
+.sCtl select{width:100%}
+.setting.invalid .sCtl input[type=text]{border-color:var(--rust)}
+.rangeRow{display:flex;gap:8px;align-items:center}
+.rangeRow input[type=range]{flex:1;accent-color:var(--brass);min-width:0}
+.rangeRow input[type=text]{width:84px;flex:none}
+.rangeEnds{display:flex;justify-content:space-between;color:var(--dimmer);font-size:10.5px;margin-top:-4px}
+.switch{position:relative;display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none;align-self:flex-start}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.switch .track{width:40px;height:22px;border-radius:11px;background:#12151C;border:1px solid var(--line2);position:relative;transition:background .15s}
+.switch .track::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--dim);transition:transform .15s,background .15s}
+.switch input:checked+.track{background:#2F4A42;border-color:var(--verdigris)}
+.switch input:checked+.track::after{transform:translateX(18px);background:#CFE6DC}
+.switch input:focus-visible+.track{outline:2px solid var(--brass);outline-offset:2px}
+.switch .lbl{color:var(--dim);font-family:Consolas,"Cascadia Mono",Menlo,monospace;font-size:12px}
+.flagSet{display:flex;flex-wrap:wrap;gap:5px}
+.flagSet button{padding:3px 9px;font-size:12px;color:var(--dim);background:#12151C}
+.flagSet button.on{background:#2F4A42;border-color:var(--verdigris);color:#CFE6DC}
+.colorRow{display:flex;gap:8px;align-items:center}
+.colorRow input[type=color]{width:38px;height:30px;padding:0;border:1px solid var(--line2);border-radius:3px;background:none;flex:none;cursor:pointer}
+.cfgEmpty{padding:40px 24px;color:var(--dim);max-width:60ch}
+.cfgEmpty h2{color:var(--bone);font-size:17px;font-weight:600;margin:0 0 6px}
+@media (max-width:1000px){.setting{grid-template-columns:1fr}}
+
+/* ---------- workshop view ---------- */
+#wsView{flex:1;min-height:0;overflow:auto}
+#wsMain{display:flex;gap:18px;padding:18px 22px 60px;align-items:flex-start;max-width:1400px}
+.wsCol{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.wsSide{width:420px;flex:none;position:sticky;top:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:16px 18px}
+.panel>h3{margin:0 0 4px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.panel>h3 .ok{color:var(--verdigris);font-size:12px;font-weight:400}
+.panel>h3 .warnTxt{color:#E0A79F;font-size:12px;font-weight:400}
+.panel>p{color:var(--dim);margin:0 0 12px;max-width:72ch}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:0 0 12px;font-size:13px}
+.kv dt{color:var(--dimmer)}
+.kv dd{margin:0;overflow-wrap:anywhere}
+.btnRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.btnRow input[type=text]{flex:1;min-width:180px}
+textarea.paste{width:100%;min-height:78px;background:#12151C;border:1px solid var(--line);border-radius:3px;padding:8px 10px;
+  color:var(--bone);font:12.5px Consolas,"Cascadia Mono",Menlo,monospace;resize:vertical}
+.resTable{margin-top:12px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.resRow{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--line)}
+.resRow:last-child{border-bottom:0}
+.resRow.dim{opacity:.55}
+.resRow .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.resRow .t small{color:var(--dimmer);margin-left:8px;font-family:Consolas,monospace;font-size:11px}
+.resRow .m{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--dimmer)}
+.resRow input{accent-color:var(--brass)}
+.group{margin-top:14px}
+.group h4{margin:0 0 6px;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);font-weight:600}
+.group.urgent h4{color:#E0A79F}
+.group .hint{display:block;margin:-2px 0 8px}
+.flag.upd2{background:#243548;color:#9CC3EC;border:1px solid #37536F}
+.flag.rem{background:#3A2222;color:#E09A92;border:1px solid #5A3838}
+.flag.pkg{color:var(--verdigris);border:1px solid #3F5A4B}
+#wsActivity .state{font-size:12.5px;color:var(--dim);margin:2px 0 10px}
+#wsActivity .state.bad{color:#E09A92}
+#wsActivity .state.good{color:#8FC4AC}
+.jobItems{list-style:none;margin:0 0 10px;padding:0;max-height:220px;overflow:auto}
+.jobItems li{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.jobItems li span:first-child{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jobItems .st{color:var(--dimmer)}
+.jobItems .st.installed,.jobItems .st.downloaded{color:#8FC4AC}
+.jobItems .st.failed{color:#E09A92}
+pre.log{background:#0F1217;border:1px solid var(--line);border-radius:3px;padding:8px 10px;margin:0;max-height:46vh;overflow:auto;
+  font:11.5px/1.45 Consolas,"Cascadia Mono",Menlo,monospace;color:#AEB4C0;white-space:pre-wrap;word-break:break-all}
+.busy{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brass);animation:pulse 1s infinite alternate}
+@keyframes pulse{from{opacity:.25}to{opacity:1}}
+.tabs button .busy{margin-left:6px;width:6px;height:6px}
+@media (max-width:1100px){#wsMain{flex-direction:column}.wsSide{width:100%;position:static}}
+
+/* ---------- workshop browser ---------- */
+.wsNav{display:flex;align-items:center;gap:10px;padding:14px 22px 0}
+.wsBody{display:flex;gap:18px;padding:14px 22px 60px;align-items:flex-start}
+.wsBody .wsCol{flex:1;min-width:0}
+.searchRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.searchRow input[type=search]{flex:1;min-width:220px}
+.searchRow select{width:auto}
+.tagRow{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
+.tagChip{display:inline-flex;align-items:center;gap:4px;background:#2B2838;border:1px solid #4A4260;color:#CFC3EA;
+  border-radius:12px;padding:2px 4px 2px 10px;font-size:12px}
+.tagChip button{border:0;background:0;padding:0 5px;color:inherit;line-height:1}
+.resHead{display:flex;align-items:baseline;gap:10px;margin:14px 0 10px;color:var(--dim);font-size:12.5px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:5px;overflow:hidden;display:flex;flex-direction:column}
+.card:hover{border-color:var(--line2)}
+.card .img{aspect-ratio:1/1;background:#12151C center/cover no-repeat;cursor:pointer;position:relative}
+.card .img .badges{position:absolute;left:6px;top:6px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.card .img .badges span{background:rgba(15,18,23,.88);border:1px solid var(--line2);border-radius:3px;padding:1px 6px;font-size:10.5px;color:var(--bone)}
+.card .img .badges .pk{color:#8FC4AC;border-color:#3F5A4B}
+.card .img .badges .rq{color:#CFC3EA;border-color:#4A4260}
+.card .body{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;flex:1}
+.card .ttl{font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
+.card .ttl:hover{color:#fff}
+.card .by{color:var(--dimmer);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .stats{color:var(--dimmer);font-size:11px;display:flex;gap:8px;flex-wrap:wrap}
+.card .stats .good{color:#8FC4AC}
+.card .add{margin-top:auto}
+.add{width:100%}
+.add.on{background:#2F4A42;border-color:var(--verdigris);color:#CFE6DC}
+.loadMore{display:flex;justify-content:center;margin-top:16px}
+.keyCard{max-width:640px}
+.keyCard ol{color:var(--dim);padding-left:20px;margin:6px 0 12px}
+.keyCard li{margin-bottom:4px}
+/* detail */
+.modal.detail{width:min(920px,100%);padding:0}
+.detail .top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;padding:18px 20px}
+.detail .hero{width:100%;aspect-ratio:16/10;object-fit:contain;background:#0F1217;border:1px solid var(--line);border-radius:4px}
+.detail .shots{display:flex;gap:6px;overflow-x:auto;margin-top:6px;padding-bottom:4px}
+.detail .shots img{height:56px;border:1px solid var(--line);border-radius:3px;cursor:pointer;flex:none}
+.detail .shots img.on{border-color:var(--brass)}
+.detail h2{margin:0 0 2px;font-size:18px;font-weight:600}
+.detail .side .by{color:var(--dim);margin-bottom:10px}
+.detail .side .kv{font-size:12.5px}
+.detail .side .btnCol{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.detail .desc{padding:0 20px 14px;color:#CFC9BD;white-space:pre-wrap;max-height:40vh;overflow:auto;font-size:13px;line-height:1.55}
+.detail .reqs{margin:0 20px 16px;border:1px solid #4A4260;border-radius:4px;padding:10px 12px;background:#221F2C}
+.detail .reqs h4{margin:0 0 8px;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:#CFC3EA}
+.detail .reqRow{display:flex;align-items:center;gap:10px;padding:4px 0}
+.detail .reqRow span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.detail .reqRow button{width:auto}
+.detail .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.detail .tags button{padding:1px 8px;font-size:11.5px;border-radius:10px;background:#12151C}
+.detail .foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--line)}
+/* list */
+.listItems{list-style:none;margin:8px 0 0;padding:0;max-height:40vh;overflow:auto}
+.listItems li{display:grid;grid-template-columns:34px minmax(0,1fr) auto 22px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)}
+.listItems .th{width:34px;height:34px;border-radius:3px;background:#12151C center/cover no-repeat;border:1px solid var(--line)}
+.listItems .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px}
+.listItems .sz{color:var(--dimmer);font-size:11px}
+.listItems .x{border:0;background:0;padding:0;color:var(--dimmer)}
+.listItems .x:hover{color:var(--bone)}
+@media (max-width:1100px){.wsBody{flex-direction:column}.detail .top{grid-template-columns:1fr}}
+
+.paneEmpty{color:var(--dimmer);padding:14px 12px;max-width:36ch}
+
+#detail h2{margin:0 0 2px;font-size:16px;font-weight:600;line-height:1.3}
+#detail .byline{color:var(--dim);margin-bottom:12px}
+#detail img.hero{width:100%;border-radius:3px;border:1px solid var(--line);margin-bottom:12px;background:#12151C;display:block}
+dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 12px;margin:0 0 14px}
+dt{color:var(--dimmer);font-size:12px}
+dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.desc{border-top:1px solid var(--line);padding-top:11px;color:#CFC9BD;white-space:pre-wrap;margin-bottom:14px}
+.detailActions{display:flex;flex-wrap:wrap;gap:6px}
+.empty{color:var(--dimmer);max-width:40ch}
+.warn{border-left:2px solid var(--rust);padding-left:11px;color:#E0A79F;margin:0 0 14px}
+.selList{margin:0 0 14px;padding:0;list-style:none;max-height:40vh;overflow:auto}
+.selList li{padding:3px 0;border-bottom:1px solid var(--line);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.pop{position:fixed;z-index:95;background:var(--panel2);border:1px solid var(--line2);border-radius:4px;padding:4px;
+  min-width:190px;box-shadow:0 8px 22px rgba(0,0,0,.55)}
+.pop button{display:block;width:100%;text-align:left;background:0;border:0;padding:5px 9px;border-radius:3px}
+.pop button:hover:not(:disabled){background:var(--raise)}
+.pop hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+
+.scrim{position:fixed;inset:0;background:rgba(9,11,15,.72);display:flex;align-items:center;justify-content:center;z-index:80;padding:20px}
+.modal{background:var(--panel);border:1px solid var(--line2);border-radius:5px;padding:20px;width:min(580px,100%);max-height:86vh;overflow:auto}
+.modal h3{margin:0 0 4px;font-size:15px;font-weight:600}
+.modal h3+p{margin-top:0}
+.modal p{color:var(--dim);margin:0 0 16px;max-width:64ch}
+.modal dl{margin-bottom:16px}
+.field{margin-bottom:12px}
+.field label{display:block;color:var(--dimmer);font-size:12px;margin-bottom:3px}
+.field input{width:100%}
+.field .found{color:var(--dimmer);font-size:11.5px;margin-top:3px}
+.modalFoot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;flex-wrap:wrap}
+.profileRow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.profileRow .nm{flex:1;min-width:0}
+.profileRow small{display:block;color:var(--dimmer)}
+
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line2);
+  border-radius:4px;padding:8px 16px;z-index:90;display:none;max-width:72ch}
+#toast.bad{border-color:var(--rust);color:#E09A92}
+.hint{color:var(--dimmer);font-size:11.5px}
+#boot{flex:1;display:flex;align-items:center;justify-content:center;padding:30px;color:var(--dim)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="bar">
+      <div class="brand" title="Emmin — Eternal Mod Manager of Nefia"><b>Emmin</b><span>Eternal Mod Manager of Nefia</span></div>
+      <div class="tabs"><button id="tabMods" class="on">Mods</button><button id="tabCfg">Config<span class="n"></span></button><button id="tabWs">Workshop<span class="n"></span></button></div>
+      <span class="spacer"></span>
+      <span id="saveState"></span>
+      <button id="btnSave" class="primary" disabled>Save load order</button>
+      <button id="btnRescan">Rescan</button>
+      <button id="btnLists">Lists</button>
+      <button id="btnFolders">Folders</button>
+      <button id="btnPlay">Play</button>
+      <button id="btnHelp">?</button>
+      <button id="btnQuit">Quit</button>
+    </div>
+    <div class="bar sub" id="modBar">
+      <input type="search" id="search" placeholder="Search both panes  ( / )" style="width:230px">
+      <div class="chips" id="filters"></div>
+      <span class="spacer"></span>
+      <span class="hint" id="selHint"></span>
+      <button id="btnSort" title="Sort the load order: your rules first, then priority, then A–Z">Sort</button>
+      <button id="btnBulk">Bulk actions ▾</button>
+    </div>
+  </header>
+  <main id="main" style="display:none">
+    <section class="pane" id="offPane">
+      <div class="paneHead"><b>Off</b><span class="sub" id="offCount"></span><span class="spacer"></span>
+        <span class="sub">A–Z</span></div>
+      <div class="list" id="offList"></div>
+    </section>
+    <section class="pane" id="onPane">
+      <div class="paneHead"><b>Load order</b><span class="sub" id="onCount"></span><span class="spacer"></span>
+        <span class="sub" id="onWarn"></span></div>
+      <div class="list" id="onList"></div>
+    </section>
+    <aside id="detail"></aside>
+  </main>
+  <main id="cfgView" style="display:none">
+    <section id="cfgSide">
+      <div class="paneHead"><b>Configs</b><span class="sub" id="cfgCount"></span></div>
+      <div style="padding:8px 10px;border-bottom:1px solid var(--line)"><input type="search" id="cfgFileSearch" placeholder="Find a mod's config" style="width:100%"></div>
+      <div id="cfgFiles"></div>
+    </section>
+    <section id="cfgMain"></section>
+  </main>
+  <main id="wsView" style="display:none"><div id="wsMain"></div></main>
+  <section id="boot">Reading your mod folders…</section>
+</div>
+<div id="toast"></div>
+<input type="file" id="importFile" accept=".json,.txt" style="display:none">
+<input type="file" id="importRulesFile" accept=".json" style="display:none">
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const el=(t,c,x)=>{const n=document.createElement(t); if(c)n.className=c; if(x!=null)n.textContent=x; return n;};
+const TOKEN = new URLSearchParams(location.search).get("token") || "";
+
+const S = {rows:[], eol:"\r\n", trailing:true, mtime:0, paths:{}, detected:{}, profiles:[], bepinexDir:"",
+           sel:new Set(), anchor:null, anchorPane:"on", filter:"all", query:"", dirty:false, undo:[], drag:null,
+           rules:{version:1,usePackagePriority:true,groups:{},mods:{}}, view:"mods"};
+
+const nameOf = r => (r.meta && r.meta.title) || r.folder;
+const byName = (a,b) => nameOf(a).localeCompare(nameOf(b),undefined,{sensitivity:"base",numeric:true});
+
+async function api(path, opts){
+  const o=Object.assign({headers:{"X-Token":TOKEN,"Content-Type":"application/json"}},opts||{});
+  if(o.body && typeof o.body!=="string") o.body=JSON.stringify(o.body);
+  const r=await fetch(path+(path.includes("?")?"&":"?")+"token="+encodeURIComponent(TOKEN),o);
+  let data={}; try{data=await r.json();}catch(e){}
+  return {ok:r.ok,status:r.status,data};
+}
+let toastT;
+function toast(msg,bad){
+  const t=$("#toast"); t.textContent=msg; t.className=bad?"bad":""; t.style.display="block";
+  clearTimeout(toastT); toastT=setTimeout(()=>t.style.display="none", bad?6000:3000);
+}
+const fmtDate=u=>u?new Date(u*1000).toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}):"";
+
+/* ================= the invariant =================
+   Active mods sit at the top of the file in load order; disabled ones pile underneath.
+   Every move below keeps that true, which is what lets two panes describe one file. */
+function normalize(){
+  const on=[],off=[];
+  for(const r of S.rows)(r.enabled?on:off).push(r);
+  S.rows=on.concat(off);
+}
+const activeRows=()=>S.rows.filter(r=>r.enabled);
+const offRows=()=>S.rows.filter(r=>!r.enabled);
+
+/* ---------- load ---------- */
+async function loadState(quiet){
+  const {ok,data}=await api("/api/state");
+  if(!ok){ toast(data.error||"Couldn't read the mod folders",true); return; }
+  Object.assign(S,{rows:data.rows,eol:data.eol,trailing:data.trailing,mtime:data.mtime,paths:data.paths,
+    detected:data.detected,profiles:data.profiles,bepinexDir:data.bepinexDir||""});
+  S.rules=tidyRules(data.rules);
+  S.steamcmd=data.steamcmd||{};
+  if(!W.poll) api("/api/job").then(({ok,data:j})=>{ if(ok&&j.id){ W.job=j; W.handled=j.running?0:j.id; if(j.running) pollJob(); } });
+  loadConfigs().then(()=>{ if(S.view==="mods") renderDetail(); });
+  const scattered = S.rows.some((r,i)=> !r.enabled && S.rows.slice(i+1).some(x=>x.enabled));
+  normalize();
+  S.dirty=false; S.undo=[]; S.sel.clear(); S.anchor=null;
+  $("#boot").style.display="none"; $("#main").style.display="flex";
+  render();
+  if(!data.loadorderExists){ toast("No loadorder.txt found. Check the Elin folder under Folders.",true); return; }
+  if(quiet) return;
+  const n=S.rows.filter(r=>r.isNew).length,u=S.rows.filter(r=>r.updated).length,m=S.rows.filter(r=>r.missing).length;
+  let msg=`${S.rows.length} mods · ${activeRows().length} on`;
+  if(n) msg+=` · ${n} new`;
+  if(u) msg+=` · ${u} updated`;
+  if(m) msg+=` · ${m} missing`;
+  toast(msg);
+  if(scattered) setTimeout(()=>toast("Your off mods were scattered through the file; they're stacked at the bottom here. Nothing changes on disk until you save.",false),3400);
+}
+
+/* ---------- filtering ---------- */
+function matches(r){
+  if(S.filter==="new"&&!r.isNew) return false;
+  if(S.filter==="updated"&&!r.updated) return false;
+  if(S.filter==="missing"&&!r.missing) return false;
+  if(S.filter==="dup"&&!r.dup) return false;
+  if(S.filter==="wsupd"){ const i=wsInfo(r); if(!(i&&i.behind)) return false; }
+  if(S.filter==="removed"){ const i=wsInfo(r); if(!(i&&i.removed)) return false; }
+  const q=S.query.trim().toLowerCase();
+  if(!q) return true;
+  const m=r.meta||{};
+  return nameOf(r).toLowerCase().includes(q)||(m.id||"").toLowerCase().includes(q)
+    ||(m.author||"").toLowerCase().includes(q)||(m.tags||"").toLowerCase().includes(q)
+    ||r.folder.toLowerCase().includes(q);
+}
+const shownOn =()=>activeRows().filter(matches);
+const shownOff=()=>offRows().filter(matches).sort(byName);
+
+/* ---------- render ---------- */
+const previewURL=r=>"/api/preview?path="+encodeURIComponent(r.path)+"&token="+encodeURIComponent(TOKEN);
+
+function render(){
+  paintList($("#onList"), shownOn(), true);
+  paintList($("#offList"), shownOff(), false);
+  const on=activeRows().length, sOn=shownOn().length, sOff=shownOff().length;
+  $("#onCount").textContent=`${on}`+(sOn!==on?` · showing ${sOn}`:"");
+  $("#offCount").textContent=`${offRows().length}`+(sOff!==offRows().length?` · showing ${sOff}`:"");
+  const miss=S.rows.filter(r=>r.missing).length,dup=S.rows.filter(r=>r.dup).length;
+  const w=[]; if(miss)w.push(`${miss} missing`); if(dup)w.push(`${dup} sharing an id`);
+  $("#onWarn").textContent=w.join(" · ");
+  $("#selHint").textContent = S.sel.size>1 ? `${S.sel.size} selected — they move as a block` : "";
+  renderChips(); renderDetail(); updateSaveState();
+}
+function paintList(box, list, isOn){
+  const keep=box.scrollTop; box.innerHTML="";
+  if(!list.length){
+    box.appendChild(el("p","paneEmpty", isOn ? "Nothing active. Drag mods over from the left."
+      : (S.query||S.filter!=="all" ? "Nothing here matches." : "Everything's on.")));
+  }else{
+    const frag=document.createDocumentFragment();
+    for(const r of list) frag.appendChild(buildRow(r,isOn));
+    box.appendChild(frag);
+  }
+  wirePaneDrop(box,isOn); box.scrollTop=keep;
+}
+function buildRow(r,isOn){
+  const row=el("div","row"+(r.missing?" missing":"")+(S.sel.has(r.path)?" sel":""));
+  row.dataset.path=r.path; row.draggable=true;
+  row.appendChild(el("div","grip","⣿"));
+  if(isOn) row.appendChild(el("div","idx",String(S.rows.indexOf(r)+1)));
+  if(r.hasPreview){const im=el("img","thumb");im.loading="lazy";im.src=previewURL(r);im.alt="";row.appendChild(im);}
+  else row.appendChild(el("div","thumb none"));
+  const t=el("div","title",nameOf(r));
+  if(r.meta&&r.meta.author) t.appendChild(el("span","by","· "+r.meta.author));
+  row.appendChild(t);
+  const meta=el("div","meta");
+  if(r.meta&&r.meta.version) meta.appendChild(el("span","ver",r.meta.version));
+  if(isOn&&r.meta&&r.meta.tags) r.meta.tags.split(/[,;]/).map(s=>s.trim()).filter(Boolean).slice(0,1)
+    .forEach(tg=>meta.appendChild(el("span","tag",tg)));
+  const ru=ruleOf(r);
+  if(ru){
+    if(ru.group&&S.rules.groups[ru.group]) meta.appendChild(el("span","tag grp",S.rules.groups[ru.group].name));
+    if(ru.pos) meta.appendChild(el("span","flag rule",ru.pos==="first"?"first":"last"));
+    const nrel=(ru.after||[]).length+(ru.before||[]).length;
+    if(nrel){ const f=el("span","flag rule","⇅ "+nrel); f.title=ruleSummary(r).join("\n"); meta.appendChild(f); }
+  }
+  const wi=wsInfo(r);
+  if(wi&&wi.removed){ const f=el("span","flag rem","removed"); f.title="Pulled from the Workshop"+(r.source==="workshop"?" — keep a local copy before Steam deletes it":""); meta.appendChild(f); }
+  else if(wi&&wi.behind){ const f=el("span","flag upd2",wi.local?"update":"update pending"); f.title=wi.local?"A newer version is on the Workshop":"Steam hasn't downloaded the newer version yet"; meta.appendChild(f); }
+  if(r.source==="workshop"&&r.workshopId&&hasPackageCopy(r.workshopId)){ const f=el("span","flag pkg","in Package too"); f.title="There's a copy in Elin\\Package — unsubscribe on Steam to drop this one"; meta.appendChild(f); }
+  if(r.dup) meta.appendChild(el("span","flag dup","same id"));
+  if(r.updated) meta.appendChild(el("span","flag upd","updated"));
+  if(r.isNew) meta.appendChild(el("span","flag new","new"));
+  if(r.missing) meta.appendChild(el("span","flag gone","missing"));
+  if(isOn) meta.appendChild(el("span","flag src",r.source==="workshop"?"W":"L"));
+  row.appendChild(meta);
+  const sw=el("button","swap",isOn?"←":"→");
+  sw.title=isOn?"Turn off — sinks to the bottom of the file":"Turn on — joins the end of the load order";
+  sw.onclick=e=>{e.stopPropagation(); const set=S.sel.has(r.path)?selected():[r]; relocate(set,null,false,!isOn);};
+  row.appendChild(sw);
+  const kb=el("button","kebab","⋮");
+  kb.onclick=e=>{e.stopPropagation(); rowMenu(e,r,isOn);};
+  row.appendChild(kb);
+  row.onclick=e=>clickRow(e,r,isOn);
+  row.ondblclick=e=>{e.preventDefault(); relocate([r],null,false,!isOn);};
+  wireRowDrag(row,r,isOn);
+  return row;
+}
+function renderChips(){
+  const n={all:S.rows.length,new:S.rows.filter(r=>r.isNew).length,updated:S.rows.filter(r=>r.updated).length,
+    missing:S.rows.filter(r=>r.missing).length,dup:S.rows.filter(r=>r.dup).length,
+    wsupd:S.rows.filter(r=>{const i=wsInfo(r); return i&&i.behind;}).length,
+    removed:S.rows.filter(r=>{const i=wsInfo(r); return i&&i.removed;}).length};
+  const defs=[["all","All"],["new","New"],["updated","Updated"],["wsupd","Update available"],["removed","Removed"],["missing","Missing"],["dup","Same id"]];
+  const box=$("#filters"); box.innerHTML="";
+  for(const [k,label] of defs){
+    if(k!=="all"&&!n[k]&&S.filter!==k) continue;   // chips only appear when they have something
+    const b=el("button",S.filter===k?"on":"",label);
+    b.appendChild(el("b",null,String(n[k])));
+    b.onclick=()=>{S.filter=k; render();};
+    box.appendChild(b);
+  }
+}
+
+/* ---------- selection ---------- */
+const selected=()=>S.rows.filter(r=>S.sel.has(r.path));
+function clickRow(e,r,isOn){
+  const pane=isOn?"on":"off";
+  const list=isOn?shownOn():shownOff();
+  if(e.altKey && S.sel.size && !S.sel.has(r.path)){          // alt+click: drop the selection right here
+    relocate(selected(),r,false,isOn); return;
+  }
+  if(e.shiftKey && S.anchor && S.anchorPane===pane){
+    const a=list.findIndex(x=>x.path===S.anchor), b=list.indexOf(r);
+    if(a>=0&&b>=0){ S.sel.clear(); for(let i=Math.min(a,b);i<=Math.max(a,b);i++) S.sel.add(list[i].path); render(); return; }
+  }
+  if(e.ctrlKey||e.metaKey){
+    S.sel.has(r.path)?S.sel.delete(r.path):S.sel.add(r.path);
+    S.anchor=r.path; S.anchorPane=pane; render(); return;
+  }
+  S.sel.clear(); S.sel.add(r.path); S.anchor=r.path; S.anchorPane=pane; render();
+}
+
+/* ---------- every move routes through here ----------
+   rows: what's moving. target: the row to land beside, or null for "end of that pane".
+   below: drop under the target rather than above. enable: which pane it ends up in. */
+function relocate(rows,target,below,enable){
+  if(!rows.length) return;
+  pushUndo();
+  const set=new Set(rows);
+  const rest=S.rows.filter(r=>!set.has(r));
+  rows.forEach(r=>r.enabled=enable);
+  let idx;
+  if(target===null || !enable){
+    // the off pile has no meaningful order, so anything switched off drops to the very bottom
+    idx = enable ? rest.filter(r=>r.enabled).length : rest.length;
+  }else{
+    idx = rest.indexOf(target);
+    if(idx<0) idx = rest.filter(r=>r.enabled).length; else idx += (below?1:0);
+  }
+  rest.splice(idx,0,...rows);
+  S.rows=rest; normalize(); dirty(); render();
+  const first=$(`.row[data-path="${CSS.escape(rows[0].path)}"]`);
+  if(first) first.scrollIntoView({block:"nearest"});
+}
+function moveToSlot(rows,n){
+  if(!rows.length) return;
+  pushUndo();
+  const set=new Set(rows);
+  const rest=S.rows.filter(r=>!set.has(r));
+  rows.forEach(r=>r.enabled=true);
+  const idx=Math.max(0,Math.min(n-1,rest.filter(r=>r.enabled).length));
+  rest.splice(idx,0,...rows);
+  S.rows=rest; normalize(); dirty(); render();
+  const first=$(`.row[data-path="${CSS.escape(rows[0].path)}"]`);
+  if(first) first.scrollIntoView({block:"center"});
+}
+function nudge(rows,delta){
+  if(!rows.length || !rows.every(r=>r.enabled)) return;
+  const act=activeRows();
+  const first=act.indexOf(rows[0]), last=act.indexOf(rows[rows.length-1]);
+  if(first<0||last<0) return;
+  if(delta<0 && first+delta<0) delta=-first;
+  if(delta>0 && last+delta>act.length-1) delta=act.length-1-last;
+  if(!delta) return;
+  moveToSlot(rows, first+delta+1);
+}
+
+/* ---------- drag ---------- */
+let autoScroll=null;
+function wireRowDrag(node,r,isOn){
+  node.ondragstart=e=>{
+    if(!S.sel.has(r.path)){ S.sel.clear(); S.sel.add(r.path); S.anchor=r.path; S.anchorPane=isOn?"on":"off"; render(); }
+    S.drag = S.sel.size>1 ? selected() : [r];
+    node.classList.add("dragging");
+    e.dataTransfer.effectAllowed="move";
+    try{e.dataTransfer.setData("text/plain",S.drag.map(x=>x.path).join("\n"));}catch(_){}
+  };
+  node.ondragend=()=>{S.drag=null; stopScroll(); clearMarks();};
+  node.ondragover=e=>{
+    if(!S.drag||S.drag.includes(r)) return;
+    e.preventDefault(); e.dataTransfer.dropEffect="move";
+    clearMarks();
+    if(isOn){
+      const b=node.getBoundingClientRect();
+      node.classList.add((e.clientY-b.top)<b.height/2?"dropAbove":"dropBelow");
+    }else node.closest(".list").classList.add("dropInto");
+    const box=node.closest(".list"); if(box) edgeScroll(box,e.clientY);
+  };
+  node.ondragleave=()=>node.classList.remove("dropAbove","dropBelow");
+  node.ondrop=e=>{
+    e.preventDefault(); e.stopPropagation();
+    if(!S.drag||S.drag.includes(r)){ clearMarks(); S.drag=null; stopScroll(); return; }
+    const below=node.classList.contains("dropBelow");
+    const block=S.drag; clearMarks(); S.drag=null; stopScroll();
+    relocate(block, isOn?r:null, below, isOn);
+  };
+}
+function wirePaneDrop(box,isOn){
+  box.ondragover=e=>{
+    if(!S.drag) return;
+    e.preventDefault(); e.dataTransfer.dropEffect="move";
+    if(!e.target.closest(".row")){ clearMarks(); box.classList.add("dropInto"); }
+    edgeScroll(box,e.clientY);
+  };
+  box.ondragleave=e=>{ if(!box.contains(e.relatedTarget)){ box.classList.remove("dropInto"); stopScroll(); } };
+  box.ondrop=e=>{
+    if(!S.drag) return;
+    e.preventDefault();
+    if(e.target.closest(".row")) return;       // the row's own handler already dealt with it
+    const block=S.drag; clearMarks(); S.drag=null; stopScroll();
+    relocate(block,null,false,isOn);           // dropped on empty space = end of that pane
+  };
+}
+function clearMarks(){
+  document.querySelectorAll(".dropAbove,.dropBelow").forEach(n=>n.classList.remove("dropAbove","dropBelow"));
+  document.querySelectorAll(".list.dropInto").forEach(n=>n.classList.remove("dropInto"));
+}
+function edgeScroll(box,y){        // a 135-row list needs to scroll while you hold a mod at the edge
+  const b=box.getBoundingClientRect(), zone=48;
+  let dir=0;
+  if(y-b.top<zone) dir=-1; else if(b.bottom-y<zone) dir=1;
+  if(!dir){ stopScroll(); return; }
+  if(autoScroll&&autoScroll.box===box&&autoScroll.dir===dir) return;
+  stopScroll();
+  autoScroll={box,dir,t:setInterval(()=>{box.scrollTop+=dir*16;},16)};
+}
+function stopScroll(){ if(autoScroll){clearInterval(autoScroll.t); autoScroll=null;} }
+
+/* ---------- detail ---------- */
+function renderDetail(){
+  const d=$("#detail"); d.innerHTML="";
+  const sel=selected();
+  if(!sel.length){ d.appendChild(el("p","empty","Pick a mod. Ctrl+click to add more, shift+click for a run of them.")); return; }
+  if(sel.length>1){
+    d.appendChild(el("h2",null,sel.length+" mods selected"));
+    d.appendChild(el("p","byline","They move together and keep their order."));
+    const ul=el("ul","selList");
+    sel.forEach(r=>ul.appendChild(el("li",null,nameOf(r))));
+    d.appendChild(ul);
+    const acts=el("div","detailActions");
+    {const g=el("button",null,"Put in a group…"); g.onclick=()=>groupPickDialog(sel); acts.appendChild(g);}
+    if(sel.some(r=>!r.enabled)){const b=el("button",null,"Turn all on"); b.onclick=()=>relocate(sel,null,false,true); acts.appendChild(b);}
+    if(sel.some(r=>r.enabled)){const b=el("button",null,"Turn all off"); b.onclick=()=>relocate(sel,null,false,false); acts.appendChild(b);}
+    if(sel.every(r=>r.enabled)){
+      const b=el("button",null,"Move to slot…"); b.onclick=()=>slotDialog(sel); acts.appendChild(b);
+      const t=el("button",null,"To top"); t.onclick=()=>moveToSlot(sel,1); acts.appendChild(t);
+      const z=el("button",null,"To bottom"); z.onclick=()=>moveToSlot(sel,activeRows().length); acts.appendChild(z);
+    }
+    d.appendChild(acts); return;
+  }
+  const r=sel[0], m=r.meta;
+  if(r.hasPreview){const im=el("img","hero"); im.src=previewURL(r); im.alt=""; d.appendChild(im);}
+  d.appendChild(el("h2",null,nameOf(r)));
+  d.appendChild(el("p","byline",m&&m.author?"by "+m.author:"no package.xml found"));
+  const dl=el("dl");
+  const add=(k,v,mono)=>{if(v===""||v==null)return; dl.appendChild(el("dt",null,k)); dl.appendChild(el("dd",mono?"mono":null,String(v)));};
+  add("Version",m&&m.version);
+  add("Id",m&&m.id,true);
+  add("Tags",m&&m.tags);
+  add("State", r.enabled?("On · slot "+(S.rows.indexOf(r)+1)+" of "+activeRows().length):"Off");
+  add("Source",r.source==="workshop"?"Steam Workshop":"Local package");
+  add(r.source==="local"&&r.workshopId?"Version from":"Updated",fmtDate(r.updatedAt));
+  const wi=wsInfo(r);
+  if(r.workshopId) add("Workshop", !W.check?"not checked yet":!wi?"—":wi.removed?"removed from the Workshop":wi.behind?(wi.local?"update available ("+fmtDate(wi.d.time_updated)+")":"Steam hasn't downloaded the update yet"):"up to date");
+  add("Folder",r.path,true);
+  d.appendChild(dl);
+  const rs=ruleSummary(r);
+  if(rs.length){
+    const box=el("div","ruleBox"); box.appendChild(el("div","ruleHead","Sort rules"));
+    rs.forEach(t=>box.appendChild(el("div",null,t))); d.appendChild(box);
+  }
+  if(r.missing) d.appendChild(el("p","warn","This line points at a folder that isn't there. Unsubscribed, moved, or on a drive that's offline."));
+  if(m&&m.description&&m.description.trim()) d.appendChild(el("div","desc",m.description.trim()));
+  const acts=el("div","detailActions");
+  const b1=el("button",null,r.enabled?"Turn off":"Turn on");
+  b1.onclick=()=>relocate([r],null,false,!r.enabled); acts.appendChild(b1);
+  if(r.enabled){const b=el("button",null,"Move to slot…"); b.onclick=()=>slotDialog([r]); acts.appendChild(b);}
+  {const b=el("button",null,"Sort rules…"); b.onclick=()=>rulesDialog(r); acts.appendChild(b);}
+  {const cf=cfgForMod(r); if(cf){const b=el("button","primary","Edit config"); b.onclick=()=>openCfg(cf.name); acts.appendChild(b);}}
+  if(!r.missing){const b=el("button",null,"Open folder"); b.onclick=()=>openFolder(r); acts.appendChild(b);}
+  if(r.workshopId){
+    const w=el("button",null,"Workshop page"); w.onclick=()=>openWorkshopBrowser(r); acts.appendChild(w);
+    const st=el("button",null,"Open in Steam"); st.onclick=()=>openWorkshopSteam(r); acts.appendChild(st);
+  }
+  d.appendChild(acts);
+}
+const workshopURL=id=>"https://steamcommunity.com/sharedfiles/filedetails/?id="+id;
+function openWorkshopBrowser(r){ window.open(workshopURL(r.workshopId),"_blank","noopener"); }
+async function openWorkshopSteam(r){
+  const {ok,data}=await api("/api/open-steam",{method:"POST",body:{id:r.workshopId}});
+  if(!ok) toast(data.error||"Couldn't reach Steam",true);
+}
+async function openFolder(r){
+  const {ok,data}=await api("/api/open",{method:"POST",body:{path:r.path}});
+  if(!ok) toast(data.error||"Couldn't open that folder",true);
+}
+
+/* ---------- move to slot ---------- */
+function slotDialog(rows){
+  const act=activeRows(); const cur=act.indexOf(rows[0])+1;
+  const scrim=el("div","scrim"); const m=el("div","modal");
+  m.appendChild(el("h3",null,rows.length>1?`Move ${rows.length} mods`:"Move "+nameOf(rows[0])));
+  m.appendChild(el("p",null,`Where should it sit in the load order? 1 loads first, ${act.length} loads last.`));
+  const f=el("div","field"); f.appendChild(el("label",null,"Slot"));
+  const i=document.createElement("input"); i.type="number"; i.min="1"; i.max=String(Math.max(act.length,1)); i.value=String(cur||1);
+  f.appendChild(i); m.appendChild(f);
+  const go=()=>{const n=parseInt(i.value,10); scrim.remove(); if(n>=1) moveToSlot(rows,n);};
+  i.onkeydown=e=>{if(e.key==="Enter")go();};
+  const foot=el("div","modalFoot");
+  const ok=el("button","primary","Move"); ok.onclick=go;
+  const cl=el("button",null,"Cancel"); cl.onclick=()=>scrim.remove();
+  foot.append(ok,cl); m.appendChild(foot); scrim.appendChild(m); document.body.appendChild(scrim);
+  i.focus(); i.select();
+  scrim.onclick=e=>{if(e.target===scrim)scrim.remove();};
+}
+
+/* ---------- menus ---------- */
+let popEl=null;
+const closePop=()=>{if(popEl){popEl.remove(); popEl=null;}};
+function openPop(x,y,items){
+  closePop(); const p=el("div","pop");
+  for(const it of items){
+    if(it==="-"){p.appendChild(el("hr")); continue;}
+    const b=el("button",null,it[0]); b.onclick=()=>{closePop(); it[1]();}; if(it[2])b.disabled=true;
+    p.appendChild(b);
+  }
+  document.body.appendChild(p); popEl=p;
+  const r=p.getBoundingClientRect();
+  p.style.left=Math.max(6,Math.min(x,innerWidth-r.width-8))+"px";
+  p.style.top=(y+r.height>innerHeight?Math.max(6,y-r.height-28):y)+"px";
+}
+addEventListener("mousedown",e=>{if(popEl&&!popEl.contains(e.target))closePop();});
+addEventListener("resize",closePop); addEventListener("scroll",closePop,true);
+
+function rowMenu(ev,r,isOn){
+  const b=ev.currentTarget.getBoundingClientRect();
+  const block=S.sel.has(r.path)&&S.sel.size>1?selected():[r];
+  const many=block.length>1;
+  const items=[];
+  if(isOn){
+    items.push([many?`Move ${block.length} to slot…`:"Move to slot…",()=>slotDialog(block)]);
+    items.push(["Move to top",()=>moveToSlot(block,1)]);
+    items.push(["Move to bottom",()=>moveToSlot(block,activeRows().length)]);
+    items.push(["Move up 10",()=>nudge(block,-10)]);
+    items.push(["Move down 10",()=>nudge(block,10)]);
+    items.push("-");
+  }
+  if(S.sel.size && !S.sel.has(r.path))
+    items.push([`Drop the ${S.sel.size} selected here`,()=>relocate(selected(),r,false,isOn)]);
+  items.push([isOn?(many?"Turn all off":"Turn off"):(many?"Turn all on":"Turn on"),
+    ()=>relocate(block,null,false,!isOn)]);
+  if(isOn) items.push(["Turn off everything below",()=>{
+    const act=activeRows(), tail=act.slice(act.indexOf(r)+1);
+    if(!tail.length){toast("Nothing below it"); return;}
+    relocate(tail,null,false,false);
+  }]);
+  items.push("-");
+  if(!many) items.push(["Sort rules…",()=>rulesDialog(r)]);
+  items.push([many?`Put ${block.length} in a group…`:"Put in a group…",()=>groupPickDialog(block)]);
+  items.push("-");
+  const cf=cfgForMod(r);
+  if(cf&&!many) items.push(["Edit config",()=>openCfg(cf.name)]);
+  items.push(["Open folder",()=>openFolder(r),r.missing]);
+  if(r.workshopId){
+    items.push(["Workshop page in browser",()=>openWorkshopBrowser(r)]);
+    items.push(["Workshop page in Steam",()=>openWorkshopSteam(r)]);
+    const ids=[...new Set(block.map(x=>x.workshopId).filter(Boolean))];
+    const copyable=ids.filter(id=>S.rows.some(x=>x.source==="workshop"&&x.workshopId===id&&!x.missing)&&!hasPackageCopy(id));
+    if(copyable.length) items.push([copyable.length>1?`Keep local copies of ${copyable.length} in Package`:"Keep a local copy in Package",()=>startCopy(copyable)]);
+    items.push([ids.length>1?`Add ${ids.length} to the download list`:"Add to the download list",async()=>{
+      await loadWsBasics(); const n=addToList(ids.map(id=>({id,title:idName(id)}))); toast(n?`Added ${n} to the download list`:"Already in the list"); }]);
+    if(S.steamcmd&&S.steamcmd.exe){
+      const allLocal=block.every(x=>x.source==="local");
+      items.push([(allLocal?"Update":"Download into Package")+(ids.length>1?` ${ids.length}`:"")+" with SteamCMD",()=>startDownload(ids)]);
+    }
+  }
+  items.push(["Copy path",()=>{navigator.clipboard.writeText(r.path); toast("Path copied");}]);
+  items.push([many?`Remove ${block.length} lines`:"Remove this line",()=>{
+    pushUndo(); const set=new Set(block);
+    S.rows=S.rows.filter(x=>!set.has(x)); block.forEach(x=>S.sel.delete(x.path)); dirty(); render();
+  }]);
+  openPop(b.left-180,b.bottom+4,items);
+}
+$("#btnBulk").onclick=ev=>{
+  const b=ev.currentTarget.getBoundingClientRect();
+  const on=shownOn(), off=shownOff(), allOn=activeRows(), allOff=offRows();
+  const filtered = S.filter!=="all" || !!S.query.trim();
+  const items=[
+    [`Disable all (${allOn.length})`,()=>relocate(allOn,null,false,false),!allOn.length],
+    [`Enable all (${allOff.length})`,()=>relocate(allOff.slice().sort(byName),null,false,true),!allOff.length],
+  ];
+  if(filtered) items.push(
+    [`Disable the ones shown (${on.length})`,()=>relocate(on,null,false,false),!on.length],
+    [`Enable the ones shown (${off.length})`,()=>relocate(off,null,false,true),!off.length]);
+  items.push(["Enable the new ones",()=>relocate(S.rows.filter(r=>r.isNew),null,false,true),!S.rows.some(r=>r.isNew)]);
+  openPop(b.right-230,b.bottom+4,items.concat([
+    "-",
+    ["Tidy the off pile alphabetically",()=>{
+      pushUndo();
+      const sorted=offRows().slice().sort(byName);
+      S.rows=activeRows().concat(sorted); dirty(); render(); toast("Off pile sorted in the file too");
+    },!offRows().length],
+    ["Sort groups & settings…",groupsDialog],
+    ["Mark updates as seen",async()=>{await api("/api/seen",{method:"POST",body:{}}); S.rows.forEach(r=>r.updated=false); render(); toast("Cleared the updated flags");},
+      !S.rows.some(r=>r.updated)],
+    "-",
+    ["Remove missing lines",()=>{
+      const n=S.rows.filter(r=>r.missing).length; if(!n){toast("Nothing missing"); return;}
+      pushUndo(); S.rows=S.rows.filter(r=>!r.missing); dirty(); render(); toast(`Removed ${n} missing lines`);}],
+    ["Open Elin folder",async()=>{const {ok,data}=await api("/api/open-config",{method:"POST",body:{}}); if(!ok)toast(data.error||"Couldn't open it",true);}],
+    ["Open mod settings (BepInEx)",async()=>{const {ok,data}=await api("/api/open-bepinex",{method:"POST",body:{}}); if(!ok)toast(data.error||"Couldn't open it",true);},!S.bepinexDir],
+    ["Undo last change",undo,!S.undo.length],
+  ]));
+};
+
+/* ---------- undo / save ---------- */
+function pushUndo(){S.undo.push(S.rows.map(r=>({path:r.path,enabled:r.enabled}))); if(S.undo.length>40)S.undo.shift();}
+function undo(){
+  const snap=S.undo.pop(); if(!snap){toast("Nothing to undo"); return;}
+  const by=new Map(S.rows.map(r=>[r.path,r])); const rows=[];
+  for(const s of snap){const r=by.get(s.path); if(r){r.enabled=s.enabled; rows.push(r); by.delete(s.path);}}
+  for(const r of by.values()) rows.push(r);
+  S.rows=rows; normalize(); dirty(); render(); toast("Undone");
+}
+function dirty(){S.dirty=true; updateSaveState();}
+function updateSaveState(){
+  $("#saveState").innerHTML=S.dirty?'<span class="dot"></span>unsaved changes':'<span class="dot clean"></span>saved';
+  $("#btnSave").disabled=!S.dirty;
+}
+async function save(force){
+  normalize();
+  const payload={rows:S.rows.map(r=>({path:r.path,enabled:r.enabled})),eol:S.eol,trailing:S.trailing,mtime:S.mtime};
+  const {ok,status,data}=await api(force?"/api/force-save":"/api/save",{method:"POST",body:payload});
+  if(status===409) return conflictDialog();
+  if(!ok){toast(data.error||"Couldn't save",true); return;}
+  S.mtime=data.mtime; S.dirty=false;
+  S.rows.forEach(r=>{r.isNew=false; r.updated=false;});
+  render(); toast("Saved. Restart Elin to pick it up.");
+}
+function conflictDialog(){
+  const scrim=el("div","scrim"); const m=el("div","modal");
+  m.appendChild(el("h3",null,"The file changed while you were working"));
+  m.appendChild(el("p",null,"Something else wrote loadorder.txt since this list was loaded — usually the game itself, if it was open. Overwriting throws away whatever it wrote; reloading throws away your unsaved changes. A backup is written either way."));
+  const foot=el("div","modalFoot");
+  const ov=el("button","primary","Overwrite with my list"); ov.onclick=()=>{scrim.remove(); save(true);};
+  const rl=el("button",null,"Reload from disk"); rl.onclick=()=>{scrim.remove(); loadState();};
+  const cl=el("button",null,"Do nothing"); cl.onclick=()=>scrim.remove();
+  foot.append(ov,rl,cl); m.appendChild(foot); scrim.appendChild(m); document.body.appendChild(scrim);
+}
+
+/* ---------- lists: saved, export, import ---------- */
+function listsDialog(){
+  const scrim=el("div","scrim"); const m=el("div","modal");
+  m.appendChild(el("h3",null,"Saved lists"));
+  m.appendChild(el("p",null,"A saved list remembers the order and which mods were on. Applying one only changes what's on screen; nothing touches loadorder.txt until you save. Export gives you a file to keep or hand to someone else."));
+  const box=el("div");
+  const push=async()=>{await api("/api/profiles",{method:"POST",body:{profiles:S.profiles}});};
+  const paint=()=>{
+    box.innerHTML="";
+    if(!S.profiles.length) box.appendChild(el("p","empty","None saved yet."));
+    S.profiles.forEach((p,i)=>{
+      const row=el("div","profileRow");
+      const nm=el("div","nm",p.name);
+      nm.appendChild(el("small",null,`${p.entries.length} mods · ${p.entries.filter(e=>e.enabled).length} on · saved ${p.saved}`));
+      row.appendChild(nm);
+      const ap=el("button",null,"Apply"); ap.onclick=()=>{applyList(p.entries,p.name); scrim.remove();}; row.appendChild(ap);
+      const up=el("button",null,"Overwrite"); up.onclick=async()=>{S.profiles[i]=snap(p.name); await push(); paint(); toast("Updated");}; row.appendChild(up);
+      const rm=el("button","danger","Delete"); rm.onclick=async()=>{S.profiles.splice(i,1); await push(); paint();}; row.appendChild(rm);
+      box.appendChild(row);
+    });
+  };
+  paint(); m.appendChild(box);
+  const f=el("div","field"); f.appendChild(el("label",null,"Save what's on screen as"));
+  const inp=document.createElement("input"); inp.type="text"; inp.placeholder="e.g. Farming run";
+  f.appendChild(inp); m.appendChild(f);
+  const foot=el("div","modalFoot");
+  const add=el("button","primary","Save list");
+  add.onclick=async()=>{const n=inp.value.trim(); if(!n)return; S.profiles.push(snap(n)); await push(); inp.value=""; paint(); toast("List saved");};
+  inp.onkeydown=e=>{if(e.key==="Enter")add.onclick();};
+  const ex=el("button",null,"Export…"); ex.onclick=()=>exportMenu(ex);
+  const im=el("button",null,"Import…"); im.onclick=()=>{scrim.remove(); $("#importFile").click();};
+  const cl=el("button",null,"Close"); cl.onclick=()=>scrim.remove();
+  foot.append(add,ex,im,cl); m.appendChild(foot); scrim.appendChild(m); document.body.appendChild(scrim);
+  scrim.onclick=e=>{if(e.target===scrim)scrim.remove();};
+}
+const snap=name=>({name,saved:new Date().toLocaleDateString(),
+  entries:S.rows.map(r=>({path:r.path,enabled:r.enabled,title:nameOf(r),id:(r.meta||{}).id||"",folder:r.folder}))});
+function download(name,text){
+  const a=el("a"); a.href=URL.createObjectURL(new Blob([text],{type:"text/plain"})); a.download=name; a.click();
+}
+function exportMenu(btn){
+  const b=btn.getBoundingClientRect();
+  openPop(b.left,b.bottom+4,[
+    ["Mod list (.json)",()=>download("emmin-modlist.json",JSON.stringify(snap("export"),null,2))],
+    ["Sort rules (.json)",()=>exportRules()],
+    ["loadorder.txt copy",()=>{
+      normalize();
+      download("loadorder.txt",S.rows.map(r=>r.path+","+(r.enabled?1:0)).join(S.eol)+(S.trailing?S.eol:""));
+    }],
+  ]);
+}
+$("#importFile").onchange=async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  e.target.value="";
+  const text=await file.text();
+  let entries=[];
+  try{
+    if(file.name.toLowerCase().endsWith(".json")){
+      const j=JSON.parse(text);
+      const inc=rulesFromJSON(j);
+      if(inc){ importRulesDialog(inc,file.name); return; }     // a rules file, not a mod list
+      entries=(j.entries||j).map(x=>({path:x.path||"",enabled:!!x.enabled,folder:x.folder||"",id:x.id||""}));
+    }else{
+      entries=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+        const i=l.lastIndexOf(","); const p=i>0?l.slice(0,i).trim():l;
+        return {path:p,enabled:i>0?l.slice(i+1).trim()!=="0":true,folder:p.split("\\").pop(),id:""};
+      });
+    }
+  }catch(err){ toast("That file didn't parse: "+err.message,true); return; }
+  if(!entries.length){ toast("No mods in that file",true); return; }
+  applyList(entries,file.name);
+};
+function applyList(entries,label){
+  pushUndo();
+  const byPath=new Map(S.rows.map(r=>[r.path.toLowerCase(),r]));
+  const byFolder=new Map(S.rows.map(r=>[r.folder.toLowerCase(),r]));
+  const byId=new Map(S.rows.filter(r=>r.meta&&r.meta.id).map(r=>[r.meta.id.toLowerCase(),r]));
+  const rows=[], used=new Set(); let gone=0;
+  for(const e of entries){
+    const r = byPath.get((e.path||"").toLowerCase())
+           || byFolder.get((e.folder||(e.path||"").split("\\").pop()||"").toLowerCase())
+           || (e.id?byId.get(e.id.toLowerCase()):null);
+    if(!r){ gone++; continue; }
+    if(used.has(r.path)) continue;
+    r.enabled=!!e.enabled; used.add(r.path); rows.push(r);
+  }
+  const extra=S.rows.filter(r=>!used.has(r.path));
+  extra.forEach(r=>r.enabled=false);
+  S.rows=rows.concat(extra); normalize(); dirty(); render();
+  toast(`Applied ${label}`+(gone?` · ${gone} of its mods aren't installed`:"")
+    +(extra.length?` · ${extra.length} not in the list turned off`:""));
+}
+
+/* ---------- folders / help ---------- */
+function foldersDialog(){
+  const scrim=el("div","scrim"); const m=el("div","modal");
+  m.appendChild(el("h3",null,"Folders"));
+  m.appendChild(el("p",null,"Found by reading Steam's own library list. Leave a box empty to keep using what's detected; type a path to override it."));
+  const rows=[["config_dir","Elin install folder","…\\steamapps\\common\\Elin — holds loadorder.txt"],
+              ["workshop_dir","Workshop mods","…\\steamapps\\workshop\\content\\2135150"],
+              ["local_dir","Local mods","…\\steamapps\\common\\Elin\\Package"]];
+  const inputs={};
+  for(const [k,label,hint] of rows){
+    const f=el("div","field"); f.appendChild(el("label",null,label));
+    const i=document.createElement("input"); i.type="text"; i.className="mono"; i.value=S.paths[k]||""; i.placeholder=hint;
+    f.appendChild(i); inputs[k]=i;
+    const det=(S.detected||{})[k];
+    if(det) f.appendChild(el("div","found","Detected: "+det));
+    m.appendChild(f);
+  }
+  if(S.bepinexDir) m.appendChild(el("p",null,"Mod settings: "+S.bepinexDir));
+  if((S.detected.libraries||[]).length) m.appendChild(el("p",null,"Steam libraries seen: "+S.detected.libraries.join("  ·  ")));
+  const foot=el("div","modalFoot");
+  const ok=el("button","primary","Apply and rescan");
+  ok.onclick=async()=>{
+    const body={}; for(const k in inputs) body[k]=inputs[k].value.trim();
+    await api("/api/paths",{method:"POST",body}); scrim.remove(); await loadState(); toast("Rescanned");
+  };
+  const cl=el("button",null,"Cancel"); cl.onclick=()=>scrim.remove();
+  foot.append(ok,cl); m.appendChild(foot); scrim.appendChild(m); document.body.appendChild(scrim);
+  scrim.onclick=e=>{if(e.target===scrim)scrim.remove();};
+}
+function helpDialog(){
+  const scrim=el("div","scrim"); const m=el("div","modal");
+  m.innerHTML=`<h3>The two panes</h3>
+  <p>Everything lives in one file: each line is a mod folder, its position is the load order, and the
+     <code>,1</code> or <code>,0</code> on the end is on or off. Slot 1 loads first, and a mod further down
+     wins when two of them touch the same thing.</p>
+  <p>A mod that's off isn't loaded, so its position means nothing. Anything you turn off therefore sinks to the
+     bottom of the file and appears in the left pane, sorted by name. Drag it back into the load order and it
+     lands exactly where you dropped it, pushing everything below down one. That's the only liberty this takes
+     with the file, and it changes nothing about how the game reads it.</p>
+  <h3>Moving a mod from 100 to 18</h3>
+  <p>Select it, scroll to slot 18, then <b>Alt+click</b> the row you want it above — or use that row's ⋮ menu and
+     pick "drop the selected here". <b>Move to slot…</b> takes a number if you'd rather type 18. Ctrl+click and
+     shift+click select several, and they travel as a block in their existing order.</p>
+  <h3>Sort and sort rules</h3>
+  <p>Sort only reorders the load order pane, and it decides in this order of authority:</p>
+  <p><b>1. Load after / Load before</b> always hold. If a mod has to load after a Load last mod, it follows it
+     to the bottom. <b>2. Load first / Load last</b> split the list into three tiers. <b>3. Within a tier,</b>
+     ranked mods first by priority, lowest first, ties A–Z; then unranked mods A–Z. A mod in a group takes the
+     group's priority. The package.xml loadPriority counts too, unless you switch it off under Bulk actions →
+     Sort groups &amp; settings.</p>
+  <p>Rules are set per mod from its ⋮ menu, and follow its package id, so they survive updates. Rules pointing
+     at mods that are off or not installed are skipped until those mods are on. If two rules contradict each
+     other, Sort tells you which, breaks the loop as gently as it can, and sorts everything else normally.</p>
+  <p>To share rules or back them up, use <b>Export rules</b> and <b>Import rules…</b> in Bulk actions → Sort groups
+     &amp; settings. Importing lets you merge theirs into yours or replace yours outright.</p>
+  <h3>Config</h3>
+  <p>The Config tab edits the settings files mods keep in <code>Elin\BepInEx\config</code>. Each setting gets the
+     control that fits it — a switch, a slider, a dropdown — along with its description and default. Only the values
+     you change are rewritten; every comment and line in the file is left exactly as it was. A mod with a config file
+     gets an <b>Edit config</b> button in its ⋮ menu. Close Elin before editing: BepInEx can rewrite these files while
+     the game is running.</p>
+  <h3>Workshop</h3>
+  <p>The Workshop tab runs SteamCMD with your own Steam login to download mods straight into
+     <code>Elin\Package</code>. SteamCMD downloads into its own folder first, then Emmin moves the finished mod into
+     Package — a real move, no links. Mods in Package are yours: Steam can't update or delete them.
+     <b>Keep a local copy</b> copies a Workshop mod you already have into Package without downloading anything, so it
+     still works for mods that have been pulled. <b>Check for updates</b> asks Steam about every Workshop mod on your
+     disk. When a mod gets a Package copy it takes over its Workshop twin's slot and on/off state, and the Workshop copy
+     is switched off; unsubscribe on Steam to drop the duplicate.</p>
+  <h3>Shortcuts</h3>
+  <dl>
+    <dt>/</dt><dd>jump to search</dd>
+    <dt>↑ ↓</dt><dd>move the selection, hold shift to extend it</dd>
+    <dt>Enter</dt><dd>send the selection to the other pane</dd>
+    <dt>Alt + ↑ ↓</dt><dd>move it up or down the load order</dd>
+    <dt>M</dt><dd>move to slot…</dd>
+    <dt>Esc</dt><dd>clear the selection</dd>
+    <dt>Ctrl + S</dt><dd>save</dd>
+    <dt>Ctrl + Z</dt><dd>undo</dd>
+  </dl>
+  <h3>Good to know</h3>
+  <p>Mods found on disk but absent from the file arrive off, tagged <b>new</b>. Lines whose folder is gone show as
+     <b>missing</b>. <b>Updated</b> comes from Steam's record of when it last downloaded each item, and clears when
+     you save. Every save writes a timestamped backup next to loadorder.txt and keeps the last ten.
+     Elin reads the file at launch, so restart the game after saving.</p>`;
+  const foot=el("div","modalFoot"); const cl=el("button","primary","Close");
+  cl.onclick=()=>scrim.remove(); foot.appendChild(cl); m.appendChild(foot);
+  scrim.appendChild(m); document.body.appendChild(scrim);
+  scrim.onclick=e=>{if(e.target===scrim)scrim.remove();};
+}
+
+/* ================= sort rules =================
+   Rules are keyed by package id (lowercased), falling back to the folder name for the rare
+   mod without one. They live in the settings file, not loadorder.txt, so they survive
+   everything and apply to a mod whichever pane it's in. */
+const modKey = r => (((r.meta&&r.meta.id)||("folder:"+r.folder))+"").toLowerCase();
+const blankRules = () => ({version:1, usePackagePriority:true, groups:{}, mods:{}});
+function tidyRules(R){
+  R=R&&typeof R==="object"?R:blankRules();
+  R.groups=R.groups||{}; R.mods=R.mods||{};
+  if(R.usePackagePriority===undefined) R.usePackagePriority=true;
+  for(const [k,v] of Object.entries(R.mods)){
+    v.after=(v.after||[]).filter(Boolean); v.before=(v.before||[]).filter(Boolean);
+    if(v.group&&!R.groups[v.group]) v.group="";
+    if(!v.pos&&!v.group&&!v.after.length&&!v.before.length) delete R.mods[k];
+  }
+  return R;
+}
+const ruleOf = r => S.rules.mods[modKey(r)] || null;
+async function saveRules(){
+  S.rules=tidyRules(S.rules);
+  const {ok,data}=await api("/api/rules",{method:"POST",body:{rules:S.rules}});
+  if(!ok) toast(data.error||"Couldn't save the sort rules",true);
+  render();
+}
+
+/* The sort itself. Pure: takes the active mods and the rules, returns the new order and a
+   report, touches nothing. Before/after rules form a graph, walked with Kahn's algorithm:
+   repeatedly place the best-ranked mod whose prerequisites are all placed. That alone honours
+   every rule but moves the wrong mod for "load before" - it delays the target instead of lifting
+   the mod that owns the rule. So a before-rule's owner borrows its target's rank, and waits until
+   the target is otherwise ready, which lands it directly above the target. The owner moves,
+   the target stays put, and after-rules behave the same way from the other side. */
+function planSort(act, R){
+  R=R||blankRules();
+  const mods=R.mods||{}, groups=R.groups||{}, usePkg=R.usePackagePriority!==false;
+  const n=act.length;
+  const info=act.map((r,i)=>{
+    const rule=mods[modKey(r)]||{};
+    const g=rule.group&&groups[rule.group];
+    let ranked=false, prio=0;
+    if(g && g.priority!=="" && g.priority!=null && isFinite(+g.priority)){ ranked=true; prio=+g.priority; }
+    else if(usePkg && r.meta && r.meta.hasPriority){ ranked=true; prio=r.meta.loadPriority; }
+    return {r,i,rule,tier:rule.pos==="first"?0:rule.pos==="last"?2:1,ranked,prio};
+  });
+  const cmp=(a,b)=>(a.tier-b.tier)||((a.ranked?0:1)-(b.ranked?0:1))
+    ||(a.ranked&&b.ranked?a.prio-b.prio:0)||byName(a.r,b.r)||(a.i-b.i);
+  const own=new Array(n);                                 // each mod's rank with no rules applied
+  info.slice().sort(cmp).forEach((x,rank)=>own[x.i]=rank);
+
+  const byKey=new Map();
+  info.forEach(x=>{const k=modKey(x.r); if(!byKey.has(k))byKey.set(k,[]); byKey.get(k).push(x.i);});
+  const succ=info.map(()=>new Set()), pred=info.map(()=>new Set()), indeg=new Array(n).fill(0);
+  const beforeTargets=info.map(()=>[]);
+  const link=(a,b)=>{ if(a===b||succ[a].has(b)) return; succ[a].add(b); pred[b].add(a); indeg[b]++; };
+  let applied=0, dangling=0;
+  info.forEach(x=>{
+    for(const k of (x.rule.after||[])){ const t=byKey.get(k); if(!t){dangling++; continue;} applied++; t.forEach(j=>link(j,x.i)); }
+    for(const k of (x.rule.before||[])){ const t=byKey.get(k); if(!t){dangling++; continue;} applied++;
+      t.forEach(j=>{ if(j!==x.i){ link(x.i,j); beforeTargets[x.i].push(j); } }); }
+  });
+
+  // before-rule owners borrow the rank of whichever target sits highest, transitively
+  const eff=own.slice(), anchor=new Array(n).fill(-1);
+  for(let pass=0,moved=true; moved&&pass<n; pass++){
+    moved=false;
+    for(let i=0;i<n;i++) for(const t of beforeTargets[i])
+      if(eff[t]<eff[i]){ eff[i]=eff[t]; anchor[i]=t; moved=true; }
+  }
+  const done=new Array(n).fill(false);
+  // is `a` waiting on nothing but the mods lifted up to sit above it?
+  const ready=(a,seen)=>{
+    if(seen.has(a)) return true; seen.add(a);
+    for(const p of pred[a]) if(!done[p] && anchor[p]!==a) return false;
+    return anchor[a]<0 || ready(anchor[a],seen);
+  };
+  const better=(i,j)=>j<0 || eff[i]<eff[j] || (eff[i]===eff[j] && own[i]<own[j]);
+
+  const out=[], loops=[];
+  const findLoop=()=>{            // every stuck mod has an unplaced predecessor; walk back until we repeat
+    let u=done.findIndex(d=>!d); const at=new Map(), path=[];
+    while(!at.has(u)){ at.set(u,path.length); path.push(u); u=[...pred[u]].find(p=>!done[p]); }
+    return path.slice(at.get(u));
+  };
+  for(let step=0;step<n;step++){
+    let best=-1, fallback=-1;
+    for(let i=0;i<n;i++){
+      if(done[i]||indeg[i]>0) continue;
+      if(better(i,fallback)) fallback=i;
+      if((anchor[i]<0||ready(anchor[i],new Set())) && better(i,best)) best=i;
+    }
+    if(best<0) best=fallback;
+    if(best<0){
+      const loop=findLoop();
+      loops.push(loop.slice().reverse().map(i=>info[i].r));
+      best=loop.reduce((a,b)=>own[a]<=own[b]?a:b);   // break it at its best-ranked member
+    }
+    done[best]=true; out.push(info[best].r);
+    for(const j of succ[best]) indeg[j]--;
+  }
+  return {order:out, applied, dangling, loops,
+          ranked:info.filter(x=>x.ranked).length, tiered:info.filter(x=>x.tier!==1).length};
+}
+
+function sortByRules(){
+  const act=activeRows();
+  if(act.length<2){ toast("Nothing to sort"); return; }
+  const plan=planSort(act,S.rules);
+  const changed=plan.order.some((r,i)=>r!==act[i]);
+  if(changed){ pushUndo(); S.rows=plan.order.concat(offRows()); dirty(); render(); $("#onList").scrollTop=0; }
+  const bits=[changed?"Sorted":"Already in order"];
+  if(plan.applied) bits.push(`${plan.applied} before/after rule${plan.applied>1?"s":""} applied`);
+  if(plan.tiered) bits.push(`${plan.tiered} first/last`);
+  if(plan.dangling) bits.push(`${plan.dangling} rule${plan.dangling>1?"s":""} skipped (mod off or not installed)`);
+  if(changed) bits.push("Ctrl+Z undoes it");
+  toast(bits.join(" · "));
+  if(plan.loops.length) loopsDialog(plan.loops);
+}
+function loopsDialog(loops){
+  const scrim=el("div","scrim"), m=el("div","modal");
+  m.appendChild(el("h3",null,loops.length>1?`${loops.length} rule loops`:"A rule loop"));
+  m.appendChild(el("p",null,"These rules contradict each other, so they can't all be true at once. The sort broke each loop at the mod that ranks highest and kept going; everything else is in order. Fix one of the rules below to make it stick."));
+  loops.forEach(loop=>{
+    const d=el("div","loop");
+    d.textContent=loop.map(nameOf).join("  →  ")+"  →  "+nameOf(loop[0]);
+    m.appendChild(d);
+  });
+  m.appendChild(el("p","hint","Read each arrow as \"has to load before\"."));
+  const foot=el("div","modalFoot"), cl=el("button","primary","OK"); cl.onclick=()=>scrim.remove();
+  foot.appendChild(cl); m.appendChild(foot); scrim.appendChild(m); document.body.appendChild(scrim);
+}
+
+/* ---------- rules editing ---------- */
+function modOptions(){       // datalist of every installed mod, "Title — package.id"
+  const dl=document.createElement("datalist"); dl.id="modPick";
+  const seen=new Set();
+  for(const r of S.rows.slice().sort(byName)){
+    const k=modKey(r); if(seen.has(k)) continue; seen.add(k);
+    const o=document.createElement("option"); o.value=nameOf(r)+" — "+k; dl.appendChild(o);
+  }
+  return dl;
+}
+function resolveRef(text){
+  const v=(text||"").trim(); if(!v) return "";
+  const dash=v.lastIndexOf(" — ");
+  if(dash>=0) return v.slice(dash+3).trim().toLowerCase();
+  const byTitle=S.rows.filter(r=>nameOf(r).toLowerCase()===v.toLowerCase());
+  if(byTitle.length===1) return modKey(byTitle[0]);
+  return v.toLowerCase();                       // taken as a raw package id
+}
+function refLabel(k){
+  const hits=S.rows.filter(r=>modKey(r)===k);
+  if(!hits.length) return {text:k, note:"not installed"};
+  return {text:nameOf(hits[0]), note:hits.some(r=>r.enabled)?"":"off"};
+}
+function groupLabel(gid){ const g=S.rules.groups[gid]; return g?`${g.name} (${g.priority})`:""; }
+const sortedGroups=()=>Object.entries(S.rules.groups).sort((a,b)=>(+a[1].priority-+b[1].priority)||a[1].name.localeCompare(b[1].name));
+const newGid=()=>"g"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+function refEditor(title,arr,selfKey,other){
+  const wrap=el("div","field");
+  wrap.appendChild(el("label",null,title));
+  const list=el("div","refs");
+  const paint=()=>{
+    list.innerHTML="";
+    if(!arr.length){ list.appendChild(el("span","hint","none")); return; }
+    arr.forEach((k,i)=>{
+      const L=refLabel(k); const chip=el("span","refChip"+(L.note?" faint":""));
+      chip.appendChild(el("span",null,L.text));
+      if(L.note) chip.appendChild(el("small",null,L.note));
+      chip.title=k;
+      const x=el("button","x","×"); x.title="Remove"; x.onclick=()=>{arr.splice(i,1); paint();};
+      chip.appendChild(x); list.appendChild(chip);
+    });
+  };
+  paint(); wrap.appendChild(list);
+  const row=el("div","inline");
+  const inp=document.createElement("input"); inp.type="text"; inp.setAttribute("list","modPick");
+  inp.placeholder="Pick a mod, or type a package id";
+  const add=el("button",null,"Add");
+  add.onclick=()=>{
+    const k=resolveRef(inp.value); if(!k) return;
+    if(k===selfKey){ toast("A mod can't be ordered against itself",true); return; }
+    if(arr.includes(k)){ inp.value=""; return; }
+    if(other.includes(k)){ toast("That mod's already on the other list — it can't be both before and after",true); return; }
+    arr.push(k); inp.value=""; paint(); inp.focus();
+  };
+  inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); add.onclick(); } };
+  row.append(inp,add); wrap.appendChild(row);
+  return wrap;
+}
+function groupSelect(current,onNew){
+  const sel=document.createElement("select");
+  const opt=(v,t)=>{const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o);};
+  opt("","No group");
+  for(const [gid,g] of sortedGroups()) opt(gid,`${g.name}  ·  priority ${g.priority}`);
+  opt("__new","New group…");
+  sel.value=current||"";
+  sel.onchange=()=>{ if(sel.value==="__new") onNew(sel); };
+  return sel;
+}
+function newGroupInline(host,sel,after){
+  if(host.querySelector(".newGroup")) return;
+  const box=el("div","inline newGroup");
+  const nm=document.createElement("input"); nm.type="text"; nm.placeholder="Group name";
+  const pr=document.createElement("input"); pr.type="number"; pr.placeholder="Priority"; pr.value="0"; pr.style.width="90px";
+  const mk=el("button","primary","Create");
+  mk.onclick=()=>{
+    const name=nm.value.trim(); if(!name){ nm.focus(); return; }
+    const p=parseFloat(pr.value); if(!isFinite(p)){ pr.focus(); return; }
+    const gid=newGid(); S.rules.groups[gid]={name,priority:p};
+    const o=document.createElement("option"); o.value=gid; o.textContent=`${name}  ·  priority ${p}`;
+    sel.insertBefore(o,sel.lastElementChild); sel.value=gid; box.remove(); if(after) after(gid);
+  };
+  const cx=el("button",null,"Cancel"); cx.onclick=()=>{ box.remove(); sel.value=""; };
+  nm.onkeydown=pr.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); mk.onclick(); } };
+  box.append(nm,pr,mk,cx); host.appendChild(box); nm.focus();
+}
+
+function rulesDialog(r){
+  const k=modKey(r);
+  const cur=JSON.parse(JSON.stringify(S.rules.mods[k]||{}));
+  cur.after=cur.after||[]; cur.before=cur.before||[]; cur.pos=cur.pos||""; cur.group=cur.group||"";
+  const scrim=el("div","scrim"), m=el("div","modal wide");
+  m.appendChild(modOptions());
+  m.appendChild(el("h3",null,"Sort rules — "+nameOf(r)));
+  const idp=el("p",null);
+  if(r.meta&&r.meta.id){ idp.append("Package id "); idp.appendChild(el("code",null,r.meta.id)); idp.append(". Rules follow the id, so they survive updates and re-downloads."); }
+  else idp.textContent="This mod has no package id, so its rules are tied to its folder name.";
+  m.appendChild(idp);
+
+  const pf=el("div","field"); pf.appendChild(el("label",null,"Position"));
+  const seg=el("div","chips seg");
+  [["","Normal"],["first","Load first"],["last","Load last"]].forEach(([v,t])=>{
+    const b=el("button",cur.pos===v?"on":"",t);
+    b.onclick=()=>{ cur.pos=v; seg.querySelectorAll("button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); };
+    seg.appendChild(b);
+  });
+  pf.appendChild(seg); m.appendChild(pf);
+
+  const gf=el("div","field"); gf.appendChild(el("label",null,"Group"));
+  const gsel=groupSelect(cur.group,sel=>newGroupInline(gf,sel,gid=>cur.group=gid));
+  gsel.addEventListener("change",()=>{ if(gsel.value!=="__new") cur.group=gsel.value; });
+  gf.appendChild(gsel); m.appendChild(gf);
+
+  m.appendChild(refEditor("Load after — this mod goes somewhere below each of these",cur.after,k,cur.before));
+  m.appendChild(refEditor("Load before — this mod goes somewhere above each of these",cur.before,k,cur.after));
+
+  const mentions=[];
+  for(const [ok,v] of Object.entries(S.rules.mods)){
+    if(ok===k) continue;
+    if((v.after||[]).includes(k)) mentions.push(`${refLabel(ok).text} loads after this`);
+    if((v.before||[]).includes(k)) mentions.push(`${refLabel(ok).text} loads before this`);
+  }
+  if(mentions.length){
+    const mf=el("div","field"); mf.appendChild(el("label",null,"Other mods' rules about this one"));
+    const ul=el("ul","selList"); mentions.forEach(t=>ul.appendChild(el("li",null,t)));
+    mf.appendChild(ul); m.appendChild(mf);
+  }
+
+  const foot=el("div","modalFoot");
+  const clr=el("button","danger","Clear this mod's rules");
+  clr.onclick=async()=>{ delete S.rules.mods[k]; await saveRules(); scrim.remove(); toast("Rules cleared"); };
+  const cl=el("button",null,"Cancel"); cl.onclick=()=>scrim.remove();
+  const sv=el("button","primary","Save rules");
+  sv.onclick=async()=>{
+    if(gsel.value==="__new") cur.group="";
+    S.rules.mods[k]={pos:cur.pos,group:cur.group,after:cur.after,before:cur.before};
+    await saveRules(); scrim.remove(); toast("Saved. Hit Sort to apply.");
+  };
+  foot.append(clr,cl,sv); m.appendChild(foot); scrim.appendChild(m); document.body.appendChild(scrim);
+  scrim.onclick=e=>{if(e.target===scrim)scrim.remove();};
+}
+
+function groupPickDialog(block){
+  const scrim=el("div","scrim"), m=el("div","modal");
+  m.appendChild(el("h3",null,block.length>1?`Put ${block.length} mods in a group`:"Put "+nameOf(block[0])+" in a group"));
+  m.appendChild(el("p",null,"Every mod in a group sorts at the group's priority, ignoring its own package.xml number. Their other rules are kept."));
+  const f=el("div","field"); f.appendChild(el("label",null,"Group"));
+  const first=ruleOf(block[0]);
+  const sel=groupSelect(first&&first.group,s=>newGroupInline(f,s));
+  f.appendChild(sel); m.appendChild(f);
+  const foot=el("div","modalFoot");
+  const cl=el("button",null,"Cancel"); cl.onclick=()=>scrim.remove();
+  const ok=el("button","primary","Apply");
+  ok.onclick=async()=>{
+    if(sel.value==="__new") return;
+    for(const r of block){
+      const k=modKey(r); const cur=S.rules.mods[k]||{pos:"",after:[],before:[]};
+      cur.group=sel.value; S.rules.mods[k]=cur;
+    }
+    await saveRules(); scrim.remove();
+    toast(sel.value?`${block.length} mod${block.length>1?"s":""} now in ${S.rules.groups[sel.value].name}. Hit Sort to apply.`:"Removed from their group");
+  };
+  foot.append(cl,ok); m.appendChild(foot); scrim.appendChild(m); document.body.appendChild(scrim);
+  scrim.onclick=e=>{if(e.target===scrim)scrim.remove();};
+}
+
+function groupsDialog(){
+  const work=JSON.parse(JSON.stringify(S.rules));
+  const scrim=el("div","scrim"), m=el("div","modal wide");
+  m.appendChild(el("h3",null,"Sort groups & settings"));
+  m.appendChild(el("p",null,"A group gives all its mods one shared priority. Lower numbers load earlier; negative numbers are fine. Mods with no priority at all always come after every ranked mod — use Load last to go below them."));
+  const tog=el("label","check");
+  const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=work.usePackagePriority!==false;
+  cb.onchange=()=>work.usePackagePriority=cb.checked;
+  tog.append(cb," Use each mod's own loadPriority from package.xml");
+  m.appendChild(tog);
+  m.appendChild(el("p","hint","Turn this off if the authors' numbers are nonsense. Then only your groups rank anything, and everything else falls back to A–Z."));
+  const table=el("div","groupTable"); m.appendChild(table);
+  const members=gid=>Object.values(work.mods).filter(v=>v.group===gid).length;
+  const paint=()=>{
+    table.innerHTML="";
+    const ids=Object.keys(work.groups).sort((a,b)=>(+work.groups[a].priority-+work.groups[b].priority));
+    if(!ids.length) table.appendChild(el("p","empty","No groups yet."));
+    for(const gid of ids){
+      const g=work.groups[gid], row=el("div","groupRow");
+      const nm=document.createElement("input"); nm.type="text"; nm.value=g.name; nm.oninput=()=>g.name=nm.value;
+      const pr=document.createElement("input"); pr.type="number"; pr.value=g.priority; pr.style.width="90px";
+      pr.oninput=()=>g.priority=pr.value===""?"":+pr.value;
+      const cnt=el("span","hint",`${members(gid)} mod${members(gid)===1?"":"s"}`);
+      const rm=el("button","danger","Delete");
+      rm.onclick=()=>{ delete work.groups[gid]; for(const v of Object.values(work.mods)) if(v.group===gid) v.group=""; paint(); };
+      row.append(nm,pr,cnt,rm); table.appendChild(row);
+    }
+  };
+  paint();
+  const addRow=el("div","inline"); addRow.style.marginTop="10px";
+  const nn=document.createElement("input"); nn.type="text"; nn.placeholder="New group name";
+  const np=document.createElement("input"); np.type="number"; np.value="0"; np.style.width="90px";
+  const ab=el("button",null,"Add group");
+  ab.onclick=()=>{ const n=nn.value.trim(), p=parseFloat(np.value); if(!n||!isFinite(p)) return;
+    work.groups[newGid()]={name:n,priority:p}; nn.value=""; paint(); };
+  nn.onkeydown=e=>{if(e.key==="Enter")ab.onclick();};
+  addRow.append(nn,np,ab); m.appendChild(addRow);
+  const share=el("div","inline"); share.style.cssText="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)";
+  share.appendChild(el("span","hint","Share your rules and groups with someone, or back them up:"));
+  share.appendChild(el("span","spacer"));
+  const ex=el("button",null,"Export rules"); ex.onclick=()=>exportRules(work);
+  const im=el("button",null,"Import rules…");
+  im.onclick=()=>{
+    if(JSON.stringify(tidyRules(JSON.parse(JSON.stringify(work))))!==JSON.stringify(tidyRules(JSON.parse(JSON.stringify(S.rules))))
+       && !confirm("Drop the unsaved changes in this dialog and import instead?")) return;
+    scrim.remove(); $("#importRulesFile").click();
+  };
+  share.append(ex,im); m.appendChild(share);
+  const foot=el("div","modalFoot");
+  const cl=el("button",null,"Cancel"); cl.onclick=()=>scrim.remove();
+  const sv=el("button","primary","Save");
+  sv.onclick=async()=>{
+    for(const g of Object.values(work.groups)){ g.name=(g.name||"").trim()||"Unnamed"; if(!isFinite(+g.priority)||g.priority==="") g.priority=0; }
+    S.rules=work; await saveRules(); scrim.remove(); toast("Saved. Hit Sort to apply.");
+  };
+  foot.append(cl,sv); m.appendChild(foot); scrim.appendChild(m); document.body.appendChild(scrim);
+  scrim.onclick=e=>{if(e.target===scrim)scrim.remove();};
+}
+/* ---------- sharing sort rules ---------- */
+function exportRules(R){
+  R=tidyRules(JSON.parse(JSON.stringify(R||S.rules)));
+  const nm=Object.keys(R.mods).length, ng=Object.keys(R.groups).length;
+  if(!nm&&!ng){ toast("No sort rules to export yet"); return; }
+  download("emmin-sort-rules.json",JSON.stringify({kind:"emmin-sort-rules",saved:new Date().toISOString(),rules:R},null,2));
+  toast(`Exported ${nm} mod rule${nm===1?"":"s"} and ${ng} group${ng===1?"":"s"}`);
+}
+function rulesFromJSON(j){
+  if(!j||typeof j!=="object") return null;
+  if((j.kind==="emmin-sort-rules"||j.kind==="elin-sort-rules")&&j.rules) return tidyRules(JSON.parse(JSON.stringify(j.rules)));
+  if(j.sort_rules&&typeof j.sort_rules==="object") return tidyRules(JSON.parse(JSON.stringify(j.sort_rules)));  // a whole emmin_settings.json
+  if(j.mods&&j.groups&&!j.entries) return tidyRules(JSON.parse(JSON.stringify(j)));                          // a bare rules object
+  return null;
+}
+/* Merge: the imported rule wins for any mod both files cover. Groups are matched by name, so
+   importing someone's "Libraries" joins yours instead of making a second one. */
+function mergeRules(inc){
+  const byName=new Map(Object.entries(S.rules.groups).map(([id,g])=>[g.name.trim().toLowerCase(),id]));
+  const remap={}; let joined=0, added=0, mods=0, replaced=0;
+  for(const [gid,g] of Object.entries(inc.groups)){
+    const key=(g.name||"").trim().toLowerCase(), same=byName.get(key);
+    if(same){ S.rules.groups[same].priority=g.priority; remap[gid]=same; joined++; }
+    else{
+      const id=S.rules.groups[gid]?newGid():gid;
+      S.rules.groups[id]={name:g.name,priority:g.priority}; remap[gid]=id; byName.set(key,id); added++;
+    }
+  }
+  for(const [k,v] of Object.entries(inc.mods)){
+    if(S.rules.mods[k]) replaced++;
+    S.rules.mods[k]={pos:v.pos||"",after:(v.after||[]).slice(),before:(v.before||[]).slice(),group:v.group?(remap[v.group]||""):""};
+    mods++;
+  }
+  return {joined,added,mods,replaced};
+}
+function importRulesDialog(inc,label){
+  const nm=Object.keys(inc.mods).length, ng=Object.keys(inc.groups).length;
+  if(!nm&&!ng){ toast("That file has no sort rules in it",true); return; }
+  const overlap=Object.keys(inc.mods).filter(k=>S.rules.mods[k]).length;
+  const mineN=Object.keys(S.rules.mods).length, mineG=Object.keys(S.rules.groups).length;
+  const sameG=Object.values(inc.groups).filter(g=>Object.values(S.rules.groups).some(x=>x.name.trim().toLowerCase()===(g.name||"").trim().toLowerCase())).length;
+  const scrim=el("div","scrim"), m=el("div","modal");
+  m.appendChild(el("h3",null,"Import sort rules"));
+  m.appendChild(el("p",null,`${label} has rules for ${nm} mod${nm===1?"":"s"} and ${ng} group${ng===1?"":"s"}. You currently have ${mineN} and ${mineG}.`));
+  const dl=el("dl");
+  const add=(k,v)=>{dl.appendChild(el("dt",null,k)); dl.appendChild(el("dd",null,v));};
+  add("Merge",`Adds theirs to yours. Where you both have a rule for the same mod, theirs wins${overlap?` (${overlap} mod${overlap===1?"":"s"})`:""}. Groups with the same name are combined${sameG?` (${sameG})`:""}, taking their priority.`);
+  add("Replace","Throws away all your rules and groups and uses theirs instead.");
+  m.appendChild(dl);
+  m.appendChild(el("p","hint","Either way, nothing moves until you press Sort, and export yours first if you might want them back."));
+  const foot=el("div","modalFoot");
+  const bk=el("button",null,"Export mine first"); bk.onclick=()=>exportRules();
+  const cl=el("button",null,"Cancel"); cl.onclick=()=>scrim.remove();
+  const rp=el("button","danger","Replace mine");
+  rp.onclick=async()=>{ S.rules=inc; await saveRules(); scrim.remove(); toast(`Replaced with ${nm} rules and ${ng} groups. Hit Sort to apply.`); };
+  const mg=el("button","primary","Merge");
+  mg.onclick=async()=>{ const r=mergeRules(inc); await saveRules(); scrim.remove();
+    toast(`Merged ${r.mods} rule${r.mods===1?"":"s"}`+(r.replaced?` (${r.replaced} replaced yours)`:"")
+      +(r.added?` · ${r.added} new group${r.added===1?"":"s"}`:"")+(r.joined?` · ${r.joined} combined with yours`:"")+". Hit Sort to apply."); };
+  foot.append(bk,el("span","spacer"),cl,rp,mg); m.appendChild(foot); scrim.appendChild(m); document.body.appendChild(scrim);
+  scrim.onclick=e=>{if(e.target===scrim)scrim.remove();};
+}
+$("#importRulesFile").onchange=async e=>{
+  const file=e.target.files[0]; if(!file) return; e.target.value="";
+  let j; try{ j=JSON.parse(await file.text()); }catch(err){ toast("That file isn't valid JSON",true); return; }
+  const inc=rulesFromJSON(j);
+  if(!inc){ toast(j&&j.entries?"That's a mod list, not sort rules — import it from Lists.":"That isn't a sort rules file",true); return; }
+  importRulesDialog(inc,file.name);
+};
+
+function ruleSummary(r){
+  const ru=ruleOf(r); if(!ru) return [];
+  const out=[];
+  if(ru.pos) out.push(ru.pos==="first"?"Load first":"Load last");
+  if(ru.group&&S.rules.groups[ru.group]) out.push("Group: "+groupLabel(ru.group));
+  if((ru.after||[]).length) out.push("After: "+ru.after.map(k=>refLabel(k).text).join(", "));
+  if((ru.before||[]).length) out.push("Before: "+ru.before.map(k=>refLabel(k).text).join(", "));
+  return out;
+}
+
+/* ================= config editor =================
+   BepInEx configs, one file per plugin. The backend hands back each setting with its line
+   number, type, default and any allowed values; this draws the right control for each and
+   sends back only the lines that changed. */
+const C={files:[],dir:"",loaded:false,name:null,data:null,edits:new Map(),q:"",fq:"",onlyChanged:false,rowEls:new Map()};
+const INT_T=/^(s?byte|u?int(16|32|64)|int)$/i, FLT_T=/^(single|double|decimal|float)$/i;
+const humanize=k=>k.replace(/_/g," ").replace(/([a-z0-9])([A-Z])/g,"$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g,"$1 $2").replace(/\s+/g," ").trim();
+const secTitle=n=>n.replace(/^\s*\d+\s*[.)-]\s*/,"");
+const normName=s=>(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+
+async function loadConfigs(){
+  const {ok,data}=await api("/api/configs");
+  if(ok){ C.files=data.files||[]; C.dir=data.dir||""; C.loaded=true; }
+  updateTabCount();
+}
+function cfgForMod(r){
+  if(!C.files.length||!r.meta) return null;
+  const id=(r.meta.id||"").toLowerCase(), t=normName(r.meta.title);
+  return C.files.find(f=>id&&(f.guid.toLowerCase()===id||f.name.slice(0,-4).toLowerCase()===id))
+      || C.files.find(f=>t&&normName(f.plugin)===t) || null;
+}
+function modForCfg(f){
+  const g=f.guid.toLowerCase(), stem=f.name.slice(0,-4).toLowerCase(), p=normName(f.plugin);
+  return S.rows.find(r=>r.meta&&r.meta.id&&[g,stem].includes(r.meta.id.toLowerCase()))
+      || S.rows.find(r=>r.meta&&p&&normName(r.meta.title)===p) || null;
+}
+const cfgLabel=f=>f.plugin||f.name.replace(/\.cfg$/i,"");
+function updateTabCount(){ const n=$("#tabCfg .n"); if(n) n.textContent=C.files.length?String(C.files.length):""; }
+
+/* ---------- switching views ---------- */
+function showView(v){
+  S.view=v;
+  $("#tabMods").classList.toggle("on",v==="mods"); $("#tabCfg").classList.toggle("on",v==="cfg"); $("#tabWs").classList.toggle("on",v==="ws");
+  $("#modBar").style.display=v==="mods"?"flex":"none";
+  $("#main").style.display=v==="mods"?"flex":"none";
+  $("#cfgView").style.display=v==="cfg"?"flex":"none";
+  $("#wsView").style.display=v==="ws"?"block":"none";
+  if(v==="ws"){ loadWsBasics().then(()=>{ if(!W.key.set&&W.sub==="browse"&&!(S.steamcmd||{}).loggedIn) W.sub="setup"; renderWs(); if(W.key.set&&!W.searched) runSearch(); }); }
+  if(v==="cfg") loadConfigs().then(()=>{ renderCfgList(); if(!C.name&&C.files.length) openCfg(C.files[0].name,true); else renderCfgMain(); });
+}
+async function openCfg(name,quiet){
+  if(C.name&&C.name!==name&&C.edits.size&&!confirm(`Discard your unsaved changes to ${C.data.meta.plugin||C.name}?`)) return;
+  if(S.view!=="cfg") showView("cfg");
+  const {ok,data}=await api("/api/config?name="+encodeURIComponent(name));
+  if(!ok){ if(!quiet) toast(data.error||"Couldn't read that config",true); return; }
+  C.name=name; C.data=data; C.edits.clear(); C.q="";
+  renderCfgList(); renderCfgMain();
+  $("#cfgMain").scrollTop=0;
+}
+
+/* ---------- left: the file list ---------- */
+function renderCfgList(){
+  const box=$("#cfgFiles"); box.innerHTML="";
+  $("#cfgCount").textContent=C.files.length?String(C.files.length):"";
+  const q=C.fq.trim().toLowerCase();
+  const list=C.files.map(f=>({f,mod:modForCfg(f)}))
+    .filter(({f,mod})=>!q||cfgLabel(f).toLowerCase().includes(q)||f.guid.toLowerCase().includes(q)||(mod&&nameOf(mod).toLowerCase().includes(q)))
+    .sort((a,b)=>cfgLabel(a.f).localeCompare(cfgLabel(b.f),undefined,{sensitivity:"base",numeric:true}));
+  if(!list.length){ box.appendChild(el("p","paneEmpty",C.files.length?"Nothing matches.":"No config files yet.")); return; }
+  for(const {f,mod} of list){
+    const it=el("div","cfgFile"+(f.name===C.name?" on":""));
+    const t=el("div","t"); t.appendChild(el("b",null,cfgLabel(f)));
+    if(f.version) t.appendChild(el("span","v","v"+f.version));
+    if(f.name===C.name&&C.edits.size){ t.appendChild(el("span","spacer")); t.appendChild(el("span","dirtyDot")); }
+    it.appendChild(t);
+    const s=el("div","s", mod?nameOf(mod):(f.guid||f.name));
+    if(mod&&!mod.enabled) s.appendChild(el("span","flag src","off"));
+    if(!mod&&/^bepinex/i.test(f.name)) s.textContent="The mod loader itself";
+    it.appendChild(s);
+    it.title=f.name+" · "+f.count+" setting"+(f.count===1?"":"s");
+    it.onclick=()=>openCfg(f.name);
+    box.appendChild(it);
+  }
+}
+
+/* ---------- right: the editor ---------- */
+function cfgKind(e){
+  if(/^boolean$/i.test(e.type)) return "bool";
+  if(INT_T.test(e.type)) return "int";
+  if(FLT_T.test(e.type)) return "float";
+  if(e.acceptable&&e.acceptable.length) return e.multi?"flags":"enum";
+  if(/^color$/i.test(e.type)) return "color";
+  return "text";
+}
+const valOf=e=>C.edits.has(e.line)?C.edits.get(e.line):e.value;
+function cfgProblem(e,v){
+  const k=cfgKind(e), t=v.trim();
+  if(k==="bool" && !/^(true|false)$/i.test(t)) return "Has to be true or false.";
+  if(k==="int" && !/^[-+]?\d+$/.test(t)) return "Needs a whole number.";
+  if(k==="float" && !/^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(t))
+    return t.includes(",")?"Use a dot for decimals, not a comma.":"Needs a number.";
+  if((k==="int"||k==="float") && e.range){
+    const n=+t, lo=+e.range.min, hi=+e.range.max;
+    if(isFinite(lo)&&isFinite(hi)&&(n<lo||n>hi)) return `Has to be between ${e.range.min} and ${e.range.max}.`;
+  }
+  if(k==="enum"){ if(!e.acceptable.some(a=>a.toLowerCase()===t.toLowerCase())) return "Not one of the allowed values."; }
+  if(k==="flags"){ const parts=t.split(",").map(x=>x.trim()).filter(Boolean);
+    if(parts.some(p=>!e.acceptable.some(a=>a.toLowerCase()===p.toLowerCase()))) return "Contains a value that isn't allowed."; }
+  if(k==="color" && t && !/^#?[0-9a-f]{6}([0-9a-f]{2})?$/i.test(t)) return "Colours are hex, like FF8800FF.";
+  return "";
+}
+const sameVal=(a,b)=>(a??"").trim().toLowerCase()===(b??"").trim().toLowerCase();
+
+function setCfgVal(e,v){
+  if(v===e.value) C.edits.delete(e.line); else C.edits.set(e.line,v);
+  refreshRow(e); refreshCfgHead();
+  const it=$("#cfgFiles .cfgFile.on .t"); if(it){ renderCfgList(); }
+}
+function refreshRow(e){
+  const row=C.rowEls.get(e.line); if(!row) return;
+  const v=valOf(e), err=cfgProblem(e,v);
+  row.classList.toggle("changed",C.edits.has(e.line));
+  row.classList.toggle("invalid",!!err);
+  const meta=row.querySelector(".sMeta"); meta.innerHTML="";
+  if(e.default!==null&&e.default!==undefined){
+    meta.appendChild(el("span",null,"Default: "+(e.default===""?"(empty)":e.default)));
+    if(!sameVal(v,e.default)){
+      const r=el("button","reset","Reset to default");
+      r.onclick=()=>{ setCfgVal(e,e.default); rebuildRow(e); };
+      meta.appendChild(r);
+    }
+  }
+  if(e.range) meta.appendChild(el("span",null,`Range: ${e.range.min} to ${e.range.max}`));
+  if(C.edits.has(e.line)){
+    const u=el("button","reset","Undo change"); u.onclick=()=>{ setCfgVal(e,e.value); rebuildRow(e); };
+    meta.appendChild(u);
+  }
+  let er=row.querySelector(".sErr");
+  if(err){ if(!er){ er=el("div","sErr"); row.querySelector(".sText").appendChild(er);} er.textContent=err; }
+  else if(er) er.remove();
+}
+function rebuildRow(e){
+  const old=C.rowEls.get(e.line); if(!old) return;
+  const fresh=buildSetting(e); old.replaceWith(fresh); C.rowEls.set(e.line,fresh); refreshRow(e);
+}
+function textInput(e,v,on){
+  const i=document.createElement("input"); i.type="text"; i.value=v; i.spellcheck=false;
+  if(cfgKind(e)==="int"||cfgKind(e)==="float") i.inputMode="decimal";
+  i.oninput=()=>on(i.value);
+  return i;
+}
+function buildControl(e){
+  const k=cfgKind(e), v=valOf(e), box=el("div","sCtl");
+  if(k==="bool"){
+    const sw=el("label","switch"), cb=document.createElement("input"); cb.type="checkbox";
+    cb.checked=/^true$/i.test(v.trim());
+    const lbl=el("span","lbl",cb.checked?"true":"false");
+    cb.onchange=()=>{ lbl.textContent=cb.checked?"true":"false"; setCfgVal(e,cb.checked?"true":"false"); };
+    sw.append(cb,el("span","track"),lbl); box.appendChild(sw); return box;
+  }
+  if((k==="int"||k==="float")&&e.range&&isFinite(+e.range.min)&&isFinite(+e.range.max)){
+    const lo=+e.range.min, hi=+e.range.max;
+    const row=el("div","rangeRow"), sl=document.createElement("input");
+    sl.type="range"; sl.min=lo; sl.max=hi; sl.step=k==="int"?"1":String((hi-lo)/200||0.01);
+    sl.value=isFinite(+v)?v:lo;
+    const tx=textInput(e,v,val=>{ if(isFinite(+val)&&val.trim()!=="") sl.value=val; setCfgVal(e,val); });
+    sl.oninput=()=>{ let val=sl.value; if(k==="float") val=String(+(+val).toFixed(4)); tx.value=val; setCfgVal(e,val); };
+    row.append(sl,tx); box.appendChild(row);
+    const ends=el("div","rangeEnds"); ends.append(el("span",null,e.range.min),el("span",null,e.range.max));
+    box.appendChild(ends); return box;
+  }
+  if(k==="enum"){
+    const sel=document.createElement("select");
+    const cur=e.acceptable.find(a=>a.toLowerCase()===v.trim().toLowerCase());
+    if(!cur){ const o=document.createElement("option"); o.value=v; o.textContent=v+" (not allowed)"; sel.appendChild(o); }
+    for(const a of e.acceptable){ const o=document.createElement("option"); o.value=a; o.textContent=humanize(a); sel.appendChild(o); }
+    sel.value=cur||v; sel.onchange=()=>setCfgVal(e,sel.value);
+    box.appendChild(sel); return box;
+  }
+  if(k==="flags"){
+    const set=el("div","flagSet");
+    const chosen=()=>valOf(e).split(",").map(x=>x.trim()).filter(Boolean);
+    for(const a of e.acceptable){
+      const b=el("button",chosen().some(c=>c.toLowerCase()===a.toLowerCase())?"on":"",humanize(a));
+      b.onclick=()=>{
+        let c=chosen(); const has=c.some(x=>x.toLowerCase()===a.toLowerCase());
+        c=has?c.filter(x=>x.toLowerCase()!==a.toLowerCase()):c.concat(a);
+        c=e.acceptable.filter(x=>c.some(y=>y.toLowerCase()===x.toLowerCase()));   // keep the file's own order
+        b.classList.toggle("on",!has); setCfgVal(e,c.join(", "));
+      };
+      set.appendChild(b);
+    }
+    box.appendChild(set); return box;
+  }
+  if(k==="color"){
+    const row=el("div","colorRow"), pick=document.createElement("input"); pick.type="color";
+    const hex6=s=>{const h=s.trim().replace(/^#/,""); return /^[0-9a-f]{6}/i.test(h)?"#"+h.slice(0,6).toLowerCase():"#000000";};
+    pick.value=hex6(v);
+    const tx=textInput(e,v,val=>{ pick.value=hex6(val); setCfgVal(e,val); });
+    pick.oninput=()=>{
+      const cur=valOf(e).trim(), hash=cur.startsWith("#")?"#":"", alpha=cur.replace(/^#/,"").slice(6,8);
+      const val=hash+pick.value.slice(1).toUpperCase()+alpha.toUpperCase(); tx.value=val; setCfgVal(e,val);
+    };
+    row.append(pick,tx); box.appendChild(row); return box;
+  }
+  box.appendChild(textInput(e,v,val=>setCfgVal(e,val)));
+  if(/keyboardshortcut/i.test(e.type)) box.appendChild(el("span","hint","Keys joined with +, e.g. LeftControl + F5"));
+  return box;
+}
+function buildSetting(e){
+  const row=el("div","setting"); row.dataset.line=e.line;
+  const txt=el("div","sText");
+  const nm=el("div","sName",humanize(e.key));
+  nm.appendChild(el("span","raw",e.key)); txt.appendChild(nm);
+  if(e.description) txt.appendChild(el("div","sDesc",e.description));
+  txt.appendChild(el("div","sMeta"));
+  row.append(txt,buildControl(e));
+  row.title=e.type?("Type: "+e.type):"";
+  return row;
+}
+function cfgEntries(){ return C.data?C.data.sections.flatMap(s=>s.entries):[]; }
+function cfgInvalid(){ return cfgEntries().filter(e=>C.edits.has(e.line)&&cfgProblem(e,valOf(e))); }
+function refreshCfgHead(){
+  const n=C.edits.size, bad=cfgInvalid().length;
+  const sv=$("#cfgSave"), dc=$("#cfgDiscard"), st=$("#cfgState");
+  if(!sv) return;
+  sv.disabled=!n||!!bad; dc.disabled=!n;
+  st.innerHTML=n?`<span class="dot"></span>${n} unsaved change${n>1?"s":""}`+(bad?` · <span style="color:#E09A92">${bad} to fix</span>`:"")
+               :'<span class="dot clean"></span>saved';
+}
+function renderCfgMain(){
+  const main=$("#cfgMain"); main.innerHTML=""; C.rowEls.clear();
+  if(!C.dir){
+    const d=el("div","cfgEmpty"); d.appendChild(el("h2",null,"No BepInEx config folder"));
+    d.appendChild(el("p",null,"Emmin looks in Elin\\BepInEx\\config. It appears once BepInEx has run at least once with a mod that has settings — launch the game with mods on, close it, then come back."));
+    main.appendChild(d); return;
+  }
+  if(!C.data){
+    const d=el("div","cfgEmpty"); d.appendChild(el("h2",null,C.files.length?"Pick a config":"No configs yet"));
+    d.appendChild(el("p",null,C.files.length?"Choose a mod on the left to edit its settings.":"Mods write their config the first time the game runs with them on."));
+    main.appendChild(d); return;
+  }
+  const D0=C.data, f=C.files.find(x=>x.name===C.name)||{name:C.name,plugin:D0.meta.plugin,guid:D0.meta.guid};
+  const mod=modForCfg(f);
+  const head=el("div","cfgHead"), top=el("div","top"), ttl=el("div");
+  ttl.appendChild(el("h2",null,D0.meta.plugin||C.name));
+  const sub=el("div","sub");
+  if(D0.meta.version) sub.append("v"+D0.meta.version+"  ·  ");
+  sub.appendChild(el("code",null,D0.meta.guid||C.name));
+  if(mod){ sub.append("  ·  "+(mod.enabled?"":"off · ")+nameOf(mod)); }
+  ttl.appendChild(sub); top.appendChild(ttl); top.appendChild(el("span","spacer"));
+  const state=el("span",null); state.id="cfgState"; state.style.cssText="color:var(--dim);font-size:12px;align-self:center";
+  const dc=el("button",null,"Discard"); dc.id="cfgDiscard";
+  dc.onclick=()=>{ C.edits.clear(); renderCfgMain(); renderCfgList(); };
+  const sv=el("button","primary","Save changes"); sv.id="cfgSave"; sv.onclick=()=>saveCfg(false);
+  top.append(state,dc,sv); head.appendChild(top);
+
+  const tools=el("div","tools");
+  const q=document.createElement("input"); q.type="search"; q.id="cfgSearch"; q.placeholder="Filter settings  ( / )"; q.value=C.q;
+  q.oninput=()=>{ C.q=q.value; paintSections(); };
+  const oc=el("label","check"); const ocb=document.createElement("input"); ocb.type="checkbox"; ocb.checked=C.onlyChanged;
+  ocb.onchange=()=>{ C.onlyChanged=ocb.checked; paintSections(); };
+  oc.append(ocb," Only ones changed from default");
+  const of=el("button",null,"Show file"); of.onclick=async()=>{ const {ok,data}=await api("/api/open-cfg",{method:"POST",body:{name:C.name}}); if(!ok)toast(data.error||"Couldn't open it",true); };
+  tools.append(q,oc,el("span","spacer"),of);
+  if(mod&&S.view==="cfg"){ const gm=el("button",null,"Show mod"); gm.onclick=()=>{ showView("mods"); S.sel.clear(); S.sel.add(mod.path); S.anchor=mod.path; S.anchorPane=mod.enabled?"on":"off"; render(); const n=$(`.row[data-path="${CSS.escape(mod.path)}"]`); if(n)n.scrollIntoView({block:"center"}); }; tools.appendChild(gm); }
+  head.appendChild(tools);
+  head.appendChild(el("div","cfgNote","Close Elin before editing: BepInEx can rewrite this file while the game runs. Most mods only read their settings at launch."));
+  main.appendChild(head);
+
+  const body=el("div","cfgBody"); body.id="cfgBody"; main.appendChild(body);
+  paintSections(); refreshCfgHead();
+}
+function paintSections(){
+  const body=$("#cfgBody"); if(!body) return;
+  body.innerHTML=""; C.rowEls.clear();
+  const q=C.q.trim().toLowerCase(); let shown=0;
+  for(const sec of C.data.sections){
+    const list=sec.entries.filter(e=>{
+      if(C.onlyChanged && (e.default==null || sameVal(valOf(e),e.default))) return false;
+      if(!q) return true;
+      return e.key.toLowerCase().includes(q)||humanize(e.key).toLowerCase().includes(q)||e.description.toLowerCase().includes(q);
+    });
+    if(!list.length) continue;
+    const s=el("div","cfgSection"); s.appendChild(el("h3",null,secTitle(sec.name)));
+    const card=el("div","cfgCard");
+    for(const e of list){ const r=buildSetting(e); C.rowEls.set(e.line,r); card.appendChild(r); refreshRow(e); shown++; }
+    s.appendChild(card); body.appendChild(s);
+  }
+  if(!shown) body.appendChild(el("p","empty",C.data.count?"No settings match.":"This file has no settings in it."));
+}
+async function saveCfg(force){
+  if(!C.edits.size) return;
+  if(cfgInvalid().length){ toast("Fix the highlighted settings first",true); return; }
+  const changes=cfgEntries().filter(e=>C.edits.has(e.line)).map(e=>({line:e.line,key:e.key,value:C.edits.get(e.line).trim()}));
+  const {ok,status,data}=await api("/api/config-save",{method:"POST",body:{name:C.name,changes,mtime:C.data.mtime,force}});
+  if(status===409) return cfgConflict();
+  if(!ok){ toast(data.error||"Couldn't save",true); return; }
+  C.data=data.config; C.edits.clear();
+  const f=C.files.find(x=>x.name===C.name); if(f) f.mtime=C.data.mtime;
+  renderCfgMain(); renderCfgList();
+  toast(`Saved ${changes.length} setting${changes.length>1?"s":""}. Restart Elin for the mod to pick ${changes.length>1?"them":"it"} up.`);
+}
+function cfgConflict(){
+  const scrim=el("div","scrim"), m=el("div","modal");
+  m.appendChild(el("h3",null,"This config changed on disk"));
+  m.appendChild(el("p",null,"Something rewrote the file since you opened it — usually Elin itself, if it's running. Reloading loses your edits here; overwriting keeps them but only if every setting you changed is still on the same line. A backup is kept either way."));
+  const foot=el("div","modalFoot");
+  const ov=el("button","primary","Overwrite anyway"); ov.onclick=()=>{ scrim.remove(); saveCfg(true); };
+  const rl=el("button",null,"Reload from disk"); rl.onclick=()=>{ scrim.remove(); C.edits.clear(); openCfg(C.name); };
+  const cl=el("button",null,"Cancel"); cl.onclick=()=>scrim.remove();
+  foot.append(ov,rl,cl); m.appendChild(foot); scrim.appendChild(m); document.body.appendChild(scrim);
+}
+
+/* ================= Workshop =================
+   SteamCMD setup, downloads into Package, local copies, and the update check. Anything that
+   takes time runs as one background job on the Python side; this polls it for progress. */
+const W={check:null,checking:false,text:"",resolved:null,resSel:new Set(),resolving:false,
+         job:null,poll:null,handled:0,updSel:new Set(),showPath:false};
+const fmtMB=b=>b?(b>=1048576?(b/1048576).toFixed(1)+" MB":Math.max(1,Math.round(b/1024))+" KB"):"";
+const idName=id=>{
+  const r=S.rows.find(x=>x.workshopId===id&&x.meta); if(r) return nameOf(r);
+  const z=(W.resolved&&W.resolved.items.find(x=>x.id===id))||(W.check&&W.check.details[id]);
+  return (z&&z.title)||id;
+};
+const hasPackageCopy=id=>S.rows.some(x=>x.source==="local"&&x.workshopId===id&&!x.missing);
+const isSubscribed=id=>S.rows.some(x=>x.source==="workshop"&&x.workshopId===id&&!x.missing);
+function wsInfo(r){
+  if(!r.workshopId||!W.check||r.missing) return null;
+  const d=W.check.details[r.workshopId]; if(!d) return null;
+  const removed=d.result!==1||d.banned;
+  const have=r.source==="local"?(r.updatedAt||0):(W.check.workshopTimes[r.workshopId]||0);
+  return {removed, behind:!removed&&have>0&&d.time_updated>have, d, local:r.source==="local"};
+}
+
+async function refreshSteamcmd(){ const {ok,data}=await api("/api/steamcmd"); if(ok) S.steamcmd=data; }
+async function startJob(path,body,label){
+  const {ok,data}=await api(path,{method:"POST",body:body||{}});
+  if(!ok){ toast(data.error||"Couldn't start that",true); return false; }
+  if(label) toast(label);
+  pollJob(); return true;
+}
+function pollJob(){
+  if(W.poll) return;
+  const tick=async()=>{
+    const {ok,data}=await api("/api/job");
+    if(ok){
+      W.job=data; paintActivity(); paintWsTab();
+      if(!data.running){
+        clearInterval(W.poll); W.poll=null;
+        if(data.id&&data.id!==W.handled){ W.handled=data.id; await jobDone(data); }
+      }
+    }
+  };
+  W.poll=setInterval(tick,700); tick();
+}
+function paintWsTab(){
+  const n=$("#tabWs .n"); if(!n) return;
+  n.innerHTML=""; if(W.job&&W.job.running) n.appendChild(el("span","busy"));
+}
+async function jobDone(j){
+  await refreshSteamcmd();
+  if(j.kind==="download"||j.kind==="copy"){
+    if(j.kind==="download"&&(j.ok||[]).length){ W.list=W.list.filter(x=>!j.ok.includes(x.id)); await saveList(); }
+    W.results.forEach(x=>{ if((j.ok||[]).includes(x.id)) x.inPackage=true; });
+    await mergeScan();
+    const moved=adoptLocal(j.ok||[]);
+    if(W.check) for(const id of j.ok||[]){ if(W.check.details[id]) W.check.details[id]=Object.assign({},W.check.details[id]); }
+    render();
+    const tail=j.error?(" · "+j.error):"";
+    toast((j.summary||"Finished")+tail,!!j.error&&!(j.ok||[]).length);
+    const still=(j.ok||[]).filter(isSubscribed);
+    if(still.length) unsubscribeDialog(still,moved);
+  }else if(j.kind==="login"){
+    toast(j.error?j.error:(j.summary||"Logged in"),!!j.error);
+  }else if(j.kind==="install"){
+    toast(j.error?("SteamCMD install failed: "+j.error):(j.summary||"SteamCMD installed"),!!j.error);
+  }
+  if(S.view==="ws") renderWs();
+}
+
+/* Re-read the folders without throwing away unsaved changes to the load order. */
+async function mergeScan(){
+  const {ok,data}=await api("/api/state"); if(!ok) return false;
+  const fresh=new Map(data.rows.map(r=>[r.path.toLowerCase(),r]));
+  const rows=[];
+  for(const r of S.rows){
+    const f=fresh.get(r.path.toLowerCase());
+    if(f){ Object.assign(r,{meta:f.meta,hasPreview:f.hasPreview,missing:f.missing,updatedAt:f.updatedAt,
+             workshopId:f.workshopId,source:f.source,localCopy:f.localCopy,folder:f.folder}); fresh.delete(r.path.toLowerCase()); }
+    else r.missing=true;
+    rows.push(r);
+  }
+  for(const f of fresh.values()){ f.enabled=false; f.isNew=true; rows.push(f); }
+  S.rows=rows; S.steamcmd=data.steamcmd||S.steamcmd;
+  const c=new Map(); for(const r of S.rows){ const id=r.meta&&r.meta.id; if(id) c.set(id,(c.get(id)||0)+1); }
+  for(const r of S.rows){ const id=r.meta&&r.meta.id; r.dup=!!(id&&c.get(id)>1); }
+  normalize(); return true;
+}
+/* A mod now in Package takes over its Workshop twin's slot and on/off state; the Workshop
+   copy is switched off and sinks. The file only changes when you save. */
+function adoptLocal(ids){
+  let moved=0;
+  for(const id of ids){
+    const ws=S.rows.find(r=>r.source==="workshop"&&r.workshopId===id);
+    const loc=S.rows.find(r=>r.source==="local"&&r.workshopId===id);
+    if(!ws||!loc||ws===loc) continue;
+    if(!moved) pushUndo();
+    const on=ws.enabled, rest=S.rows.filter(r=>r!==loc);
+    rest.splice(rest.indexOf(ws),0,loc);
+    loc.enabled=on; loc.isNew=false; ws.enabled=false;
+    S.rows=rest; normalize(); moved++;
+  }
+  if(moved) dirty();
+  return moved;
+}
+function unsubscribeDialog(ids,moved){
+  const scrim=el("div","scrim"), m=el("div","modal");
+  m.appendChild(el("h3",null,"Unsubscribe from the Workshop copies"));
+  m.appendChild(el("p",null,(moved?`${moved} mod${moved>1?"s":""} now load from Package, in the same slot${moved>1?"s":""} and on/off state as before, and the Workshop copies are switched off. Save when you're happy. `:"")
+    +"You're still subscribed to these, so Steam keeps a second copy. Unsubscribe on each page to stop the duplicates; the Package copies stay no matter what."));
+  const ul=el("div");
+  for(const id of ids){
+    const row=el("div","profileRow"); row.appendChild(el("div","nm",idName(id)));
+    const b=el("button",null,"Open in Steam"); b.onclick=()=>api("/api/open-steam",{method:"POST",body:{id}});
+    row.appendChild(b); ul.appendChild(row);
+  }
+  m.appendChild(ul);
+  const foot=el("div","modalFoot"), cl=el("button","primary","Done"); cl.onclick=()=>scrim.remove();
+  foot.appendChild(cl); m.appendChild(foot); scrim.appendChild(m); document.body.appendChild(scrim);
+}
+function startDownload(ids){
+  if(!S.steamcmd||!S.steamcmd.exe){ toast("Set up SteamCMD in the Workshop tab first",true); return; }
+  if(!S.steamcmd.loggedIn){ toast("Log in to Steam in the Workshop tab first",true); return; }
+  startJob("/api/workshop/download",{ids},`Downloading ${ids.length} mod${ids.length>1?"s":""} into Package…`);
+}
+function startCopy(ids){ startJob("/api/workshop/copy",{ids},`Copying ${ids.length} mod${ids.length>1?"s":""} into Package…`); }
+
+/* ---------- the tab ---------- */
+function panel(title,extra){
+  const p=el("section","panel"), h=el("h3",null,title);
+  if(extra) h.appendChild(extra);
+  p.appendChild(h); return p;
+}
+function panelSteamcmd(){
+  const sc=S.steamcmd||{};
+  const ready=sc.exe&&sc.loggedIn;
+  const p=panel("SteamCMD",el("span",ready?"ok":"warnTxt",ready?"· ready":sc.exe?"· needs login":"· not set up"));
+  p.appendChild(el("p",null,"Downloads Workshop mods straight into Elin\\Package, where Steam can't delete them. Elin needs your own Steam login for this — anonymous downloads aren't allowed for it."));
+  const kv=el("dl","kv");
+  kv.append(el("dt",null,"SteamCMD"),el("dd",sc.exe?"mono":null,sc.exe||"not found"));
+  kv.append(el("dt",null,"Account"),el("dd",null,sc.username?(sc.username+(sc.loggedIn?" — logged in":" — not logged in yet")):"not set"));
+  p.appendChild(kv);
+  if(!sc.exe||W.showPath){
+    const r=el("div","btnRow");
+    if(!sc.exe){ const inst=el("button","primary","Install SteamCMD for me"); inst.onclick=()=>startJob("/api/steamcmd/install",{},"Downloading SteamCMD from Valve…"); r.appendChild(inst); }
+    const pi=document.createElement("input"); pi.type="text"; pi.className="mono"; pi.placeholder="…or where your steamcmd.exe is, e.g. C:\\steamcmd";
+    const ps=el("button",null,"Use this"); ps.onclick=async()=>{ await api("/api/steamcmd/config",{method:"POST",body:{path:pi.value}}); await refreshSteamcmd(); W.showPath=false; renderWs(); toast(S.steamcmd.exe?"Found SteamCMD":"No steamcmd.exe there",!S.steamcmd.exe); };
+    r.append(pi,ps); p.appendChild(r);
+  }
+  const r2=el("div","btnRow");
+  const ui=document.createElement("input"); ui.type="text"; ui.placeholder="Steam account name (the one you log in with)"; ui.value=sc.username||"";
+  const us=el("button",null,"Save name");
+  us.onclick=async()=>{ const {ok,data}=await api("/api/steamcmd/config",{method:"POST",body:{username:ui.value}}); if(!ok){toast(data.error,true);return;} await refreshSteamcmd(); renderWs(); };
+  ui.onkeydown=e=>{ if(e.key==="Enter") us.onclick(); };
+  r2.append(ui,us); p.appendChild(r2);
+  const r3=el("div","btnRow");
+  const li=el("button",sc.loggedIn?null:"primary","Log in to Steam…"); li.disabled=!sc.exe||!sc.username;
+  li.onclick=async()=>{ const {ok,data}=await api("/api/steamcmd/login-window",{method:"POST",body:{}});
+    toast(ok?"A SteamCMD window opened. Log in there, close it, then press Check login.":data.error,!ok); };
+  const ck=el("button",null,"Check login"); ck.disabled=!sc.exe||!sc.username;
+  ck.onclick=()=>startJob("/api/steamcmd/test",{},"Checking your Steam login…");
+  r3.append(li,ck);
+  if(sc.exe&&!W.showPath){ const ch=el("button",null,"Change SteamCMD location"); ch.onclick=()=>{W.showPath=true; renderWs();}; r3.appendChild(ch); }
+  p.appendChild(r3);
+  p.appendChild(el("p","hint","Your password and Steam Guard code go into SteamCMD's own window, not Emmin. SteamCMD remembers the login afterwards; if it ever forgets, Emmin will tell you."));
+  return p;
+}
+function panelUpdates(){
+  const p=panel("Check for updates");
+  p.appendChild(el("p",null,"Asks Steam about every Workshop mod on your disk, in both folders: what's newer, and what's been pulled."));
+  const r=el("div","btnRow");
+  const b=el("button","primary",W.checking?"Checking…":"Check for updates"); b.disabled=W.checking;
+  b.onclick=runCheck;
+  r.appendChild(b);
+  if(W.check) r.appendChild(el("span","hint","Checked "+new Date(W.check.checked*1000).toLocaleTimeString()));
+  p.appendChild(r);
+  const subs=[...new Set(S.rows.filter(x=>x.source==="workshop"&&x.workshopId&&!x.missing&&!hasPackageCopy(x.workshopId)).map(x=>x.workshopId))];
+  if(!W.check){
+    if(subs.length) p.appendChild(keepAll(subs));
+    return p;
+  }
+  const byId=new Map();
+  for(const x of S.rows){ const i=wsInfo(x); if(!i) continue; const cur=byId.get(x.workshopId)||{local:false,ws:false,removed:i.removed,behindLocal:false,behindWs:false};
+    if(i.local){cur.local=true; cur.behindLocal=cur.behindLocal||i.behind;} else {cur.ws=true; cur.behindWs=cur.behindWs||i.behind;}
+    byId.set(x.workshopId,cur); }
+  const upd=[...byId].filter(([,v])=>v.behindLocal).map(([k])=>k);
+  const removed=[...byId].filter(([,v])=>v.removed).map(([k,v])=>[k,v]);
+  const pending=[...byId].filter(([,v])=>v.behindWs&&!v.local).map(([k])=>k);
+  const fine=[...byId].filter(([,v])=>!v.removed&&!v.behindLocal&&!v.behindWs).length;
+
+  if(removed.length){
+    const g=el("div","group urgent"); g.appendChild(el("h4",null,`Removed from the Workshop (${removed.length})`));
+    g.appendChild(el("span","hint","Steam deletes its copy of a removed mod. Anything not already in Package should be copied there now — this copies what's on your disk, so it works even though the mod's gone."));
+    const t=el("div","resTable");
+    for(const [id,v] of removed){
+      const row=el("div","resRow"); row.appendChild(el("span"));
+      const tt=el("div","t",idName(id)); tt.appendChild(el("small",null,id)); row.appendChild(tt);
+      const mm=el("div","m");
+      if(v.local) mm.appendChild(el("span","flag pkg","safe in Package"));
+      else if(v.ws){ const k=el("button","primary","Keep a local copy"); k.onclick=()=>startCopy([id]); mm.appendChild(k); }
+      row.appendChild(mm); t.appendChild(row);
+    }
+    g.appendChild(t);
+    const unsafe=removed.filter(([,v])=>!v.local&&v.ws).map(([k])=>k);
+    if(unsafe.length>1){ const r2=el("div","btnRow"); const all=el("button","primary",`Keep local copies of all ${unsafe.length}`); all.onclick=()=>startCopy(unsafe); r2.appendChild(all); g.appendChild(r2); }
+    p.appendChild(g);
+  }
+  if(upd.length){
+    const g=el("div","group"); g.appendChild(el("h4",null,`Updates for your Package mods (${upd.length})`));
+    const t=el("div","resTable");
+    for(const id of upd){
+      const d=W.check.details[id], row=el("div","resRow");
+      const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!W.updSel.has("x"+id);
+      cb.onchange=()=>{ cb.checked?W.updSel.delete("x"+id):W.updSel.add("x"+id); };
+      const tt=el("div","t",idName(id)); tt.appendChild(el("small",null,"updated "+fmtDate(d.time_updated)));
+      row.append(cb,tt,el("div","m")); t.appendChild(row);
+    }
+    g.appendChild(t);
+    const r2=el("div","btnRow"); const go=el("button","primary","Update selected with SteamCMD");
+    go.onclick=()=>{ const ids=upd.filter(id=>!W.updSel.has("x"+id)); if(ids.length) startDownload(ids); };
+    go.disabled=!(S.steamcmd&&S.steamcmd.loggedIn)||(W.job&&W.job.running);
+    r2.appendChild(go); g.appendChild(r2); p.appendChild(g);
+  }
+  if(pending.length){
+    const g=el("div","group"); g.appendChild(el("h4",null,`Waiting on Steam (${pending.length})`));
+    g.appendChild(el("span","hint","Newer versions of these subscribed mods exist; the Steam client downloads them next time it runs or restarts. Nothing for Emmin to do."));
+    const ul=el("ul","selList"); pending.forEach(id=>ul.appendChild(el("li",null,idName(id)))); g.appendChild(ul);
+    p.appendChild(g);
+  }
+  if(!removed.length&&!upd.length&&!pending.length) p.appendChild(el("p","hint",`All ${fine} Workshop mod${fine===1?"":"s"} are up to date.`));
+  else if(fine) p.appendChild(el("p","hint",`${fine} other${fine===1?"":"s"} up to date.`));
+  if(subs.length) p.appendChild(keepAll(subs));
+  return p;
+}
+function keepAll(subs){
+  const g=el("div","group"); g.appendChild(el("h4",null,"Protect everything"));
+  g.appendChild(el("span","hint",`Copy all ${subs.length} subscribed mod${subs.length>1?"s":""} that aren't in Package yet. They take over the same load-order slots; afterwards, unsubscribe on Steam so there's one copy of each.`));
+  const r=el("div","btnRow"); const b=el("button",null,`Keep local copies of all ${subs.length}`);
+  b.onclick=()=>{ if(confirm(`Copy ${subs.length} Workshop mod${subs.length>1?"s":""} into Elin\\Package?`)) startCopy(subs); };
+  b.disabled=W.job&&W.job.running; r.appendChild(b); g.appendChild(r); return g;
+}
+async function runCheck(){
+  W.checking=true; if(S.view==="ws") renderWs();
+  const {ok,data}=await api("/api/workshop/check",{method:"POST",body:{}});
+  W.checking=false;
+  if(!ok){ toast(data.error||"Couldn't reach Steam",true); if(S.view==="ws") renderWs(); return; }
+  W.check=data; render(); if(S.view==="ws") renderWs();
+  const rem=S.rows.filter(r=>{const i=wsInfo(r); return i&&i.removed;}).length;
+  const upd=S.rows.filter(r=>{const i=wsInfo(r); return i&&i.behind&&i.local;}).length;
+  toast(`Checked ${Object.keys(data.details).length} Workshop mods`+(upd?` · ${upd} update${upd>1?"s":""} for Package mods`:"")+(rem?` · ${rem} removed from the Workshop`:""),false);
+}
+const JOB_TITLE={install:"Installing SteamCMD",login:"Checking your Steam login",download:"Downloading into Package",copy:"Copying into Package"};
+function paintActivity(){
+  const a=$("#wsActivity"); if(!a) return;
+  const keepBottom=(()=>{const l=a.querySelector("pre.log"); return !l||l.scrollTop+l.clientHeight>=l.scrollHeight-8;})();
+  a.innerHTML=""; const j=W.job;
+  const h=el("h3",null,"Activity"); if(j&&j.running) h.appendChild(el("span","busy")); a.appendChild(h);
+  if(!j||!j.id){ a.appendChild(el("p","hint","Nothing running. Downloads, copies and SteamCMD output show up here.")); return; }
+  a.appendChild(el("div",null,JOB_TITLE[j.kind]||j.kind));
+  const st=j.running?el("div","state","Working…"):j.error?el("div","state bad",j.error):el("div","state good",j.summary||"Done");
+  a.appendChild(st);
+  const ids=Object.keys(j.items||{});
+  if(ids.length){
+    const ul=el("ul","jobItems");
+    for(const id of ids){ const s=j.items[id], li=el("li"); li.appendChild(el("span",null,idName(id)));
+      li.appendChild(el("span","st "+s.split(":")[0],s)); ul.appendChild(li); }
+    a.appendChild(ul);
+  }
+  const pre=el("pre","log"); pre.textContent=(j.lines||[]).slice(-150).join("\n"); a.appendChild(pre);
+  if(keepBottom) pre.scrollTop=pre.scrollHeight;
+  if(j.running){ const r=el("div","btnRow"); const c=el("button","danger","Cancel"); c.onclick=()=>api("/api/job/cancel",{method:"POST",body:{}}); r.appendChild(c); a.appendChild(r); }
+  if(j.needsLogin&&!j.running){ const r=el("div","btnRow"); const b=el("button","primary","Log in to Steam…");
+    b.onclick=async()=>{ const {ok,data}=await api("/api/steamcmd/login-window",{method:"POST",body:{}}); toast(ok?"A SteamCMD window opened. Log in there, close it, then press Check login.":data.error,!ok); };
+    r.appendChild(b); a.appendChild(r); }
+}
+
+/* ---------- Workshop browser + download list ---------- */
+Object.assign(W,{sub:"browse",q:"",sort:"trend",days:7,tags:[],results:[],total:0,page:1,loading:false,
+                 hiddenMature:0,list:[],key:{set:false,hint:"",mature:false},searched:false,pasteText:""});
+async function loadWsBasics(){
+  const [k,l]=await Promise.all([api("/api/workshop/key"),api("/api/workshop/list"),refreshSteamcmd()]);
+  if(k.ok) W.key=k.data; if(l.ok) W.list=l.data.items||[];
+}
+async function saveList(){ const {ok,data}=await api("/api/workshop/list",{method:"POST",body:{items:W.list}}); if(ok) W.list=data.items; }
+const inList=id=>W.list.some(x=>x.id===id);
+function addToList(items){
+  let n=0; for(const it of items){ if(!it||inList(it.id)) continue; W.list.push({id:it.id,title:it.title||it.id,size:it.size||0,preview:it.preview||""}); n++; }
+  saveList(); paintDlList(); syncAddButtons(); return n;
+}
+function removeFromList(id){ W.list=W.list.filter(x=>x.id!==id); saveList(); paintDlList(); syncAddButtons(); }
+function syncAddButtons(){
+  document.querySelectorAll('button.add[data-id]').forEach(b=>{ const on=inList(b.dataset.id); b.classList.toggle("on",on); b.textContent=on?"✓ In download list":"+ Add to list"; });
+}
+function addBtn(it){
+  const b=el("button","add"); b.dataset.id=it.id;
+  b.onclick=e=>{ e.stopPropagation(); inList(it.id)?removeFromList(it.id):addToList([it]); };
+  const on=inList(it.id); b.classList.toggle("on",on); b.textContent=on?"✓ In download list":"+ Add to list";
+  return b;
+}
+const fmtCount=n=>n>=1000000?(n/1e6).toFixed(1)+"M":n>=1000?(n/1000).toFixed(n>=10000?0:1)+"k":String(n);
+
+function searchFrom(opts){        // every control goes through here, so what's on screen always matches the query
+  Object.assign(W,opts||{});
+  if(W.q&&W.sort==="trend") W.sort="relevance";
+  if(!W.q&&W.sort==="relevance") W.sort="trend";
+  const box=$("#wsBrowse"); if(box){ box.replaceWith(sectionBrowse()); paintBrowse(); }
+  runSearch();
+}
+async function runSearch(more){
+  if(!W.key.set) return;
+  if(!more){ W.page=1; W.results=[]; } else W.page++;
+  W.loading=true; paintBrowse();
+  const {ok,status,data}=await api("/api/workshop/browse",{method:"POST",body:{q:W.q,sort:W.sort,days:W.days,page:W.page,tags:W.tags}});
+  W.loading=false; W.searched=true;
+  if(status===401){ W.key.set=false; toast("Steam rejected the API key — set it again under Setup",true); renderWs(); return; }
+  if(!ok){ toast(data.error||"Search failed",true); if(more) W.page--; paintBrowse(); return; }
+  const seen=new Set(W.results.map(x=>x.id));
+  W.results=W.results.concat(data.items.filter(x=>!seen.has(x.id)));
+  W.total=data.total; W.hiddenMature=(more?W.hiddenMature:0)+data.hiddenMature;
+  paintBrowse();
+}
+function sectionBrowse(){
+  const wrap=el("div"); wrap.id="wsBrowse";
+  if(!W.key.set){ wrap.appendChild(keyPanel(true)); return wrap; }
+  const p=el("div","panel");
+  const row=el("div","searchRow");
+  const q=document.createElement("input"); q.type="search"; q.placeholder="Search the Elin Workshop"; q.value=W.q;
+  q.onkeydown=e=>{ if(e.key==="Enter") searchFrom({q:q.value.trim()}); };
+  const sort=document.createElement("select");
+  [["relevance","Best match"],["trend","Trending"],["subscribed","Most subscribed"],["recent","Newest"],["updated","Recently updated"],["top","Top rated"]]
+    .forEach(([v,t])=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; sort.appendChild(o); });
+  sort.value=W.sort;
+  const days=document.createElement("select");
+  [[1,"Today"],[7,"This week"],[30,"This month"],[90,"3 months"],[180,"6 months"],[365,"This year"],[0,"All time"]]
+    .forEach(([v,t])=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; days.appendChild(o); });
+  days.value=String(W.days); days.style.display=W.sort==="trend"?"":"none";
+  sort.onchange=()=>{ W.sort=sort.value; searchFrom(); };
+  days.onchange=()=>searchFrom({days:+days.value});
+  const go=el("button","primary","Search"); go.onclick=()=>searchFrom({q:q.value.trim()});
+  row.append(q,sort,days,go); p.appendChild(row);
+  if(W.tags.length){
+    const tr=el("div","tagRow"); tr.appendChild(el("span","hint","Tags:"));
+    W.tags.forEach(t=>{ const c=el("span","tagChip",t); const x=el("button",null,"×"); x.title="Remove tag";
+      x.onclick=()=>searchFrom({tags:W.tags.filter(z=>z!==t)}); c.appendChild(x); tr.appendChild(c); });
+    p.appendChild(tr);
+  }
+  wrap.appendChild(p);
+  const res=el("div"); res.id="wsResults"; wrap.appendChild(res);
+  return wrap;
+}
+function tagFilter(t){
+  document.querySelectorAll('.scrim.detailScrim').forEach(s=>s.remove());
+  const tags=W.tags.includes(t)?W.tags:W.tags.concat(t);
+  if(W.sub!=="browse"){ W.sub="browse"; W.tags=tags; renderWs(); runSearch(); } else searchFrom({tags});
+}
+function paintBrowse(){
+  const res=$("#wsResults"); if(!res) return;
+  res.innerHTML="";
+  const head=el("div","resHead");
+  if(W.loading&&!W.results.length) head.appendChild(el("span",null,"Searching…"));
+  else if(W.searched) head.appendChild(el("span",null,`${W.total.toLocaleString()} mod${W.total===1?"":"s"}`+(W.q?` matching "${W.q}"`:"")));
+  if(W.hiddenMature) head.appendChild(el("span","hint",`· ${W.hiddenMature} mature item${W.hiddenMature===1?"":"s"} hidden (Setup)`));
+  res.appendChild(head);
+  const grid=el("div","cards");
+  for(const it of W.results) grid.appendChild(buildCard(it));
+  res.appendChild(grid);
+  if(W.searched&&!W.results.length&&!W.loading) res.appendChild(el("p","empty","Nothing found."));
+  if(W.results.length&&W.results.length<W.total){
+    const lm=el("div","loadMore"), b=el("button",null,W.loading?"Loading…":"Load more"); b.disabled=W.loading;
+    b.onclick=()=>runSearch(true); lm.appendChild(b); res.appendChild(lm);
+  }
+}
+function buildCard(it){
+  const c=el("div","card");
+  const img=el("div","img"); if(it.preview) img.style.backgroundImage=`url("${it.preview.replace(/"/g,"%22")}")`;
+  const badges=el("div","badges");
+  if(it.inPackage) badges.appendChild(el("span","pk","In Package"));
+  else if(it.subscribed) badges.appendChild(el("span",null,"Subscribed"));
+  if(it.requires&&it.requires.length) badges.appendChild(el("span","rq",`Needs ${it.requires.length} more`));
+  img.appendChild(badges); img.onclick=()=>detailDialog(it.id);
+  const b=el("div","body");
+  const t=el("div","ttl",it.title); t.onclick=()=>detailDialog(it.id); b.appendChild(t);
+  if(it.author) b.appendChild(el("div","by","by "+it.author));
+  const st=el("div","stats");
+  if(it.up+it.down>0) st.appendChild(el("span",it.score>=.8?"good":null,Math.round(it.score*100)+"% 👍"));
+  st.appendChild(el("span",null,fmtCount(it.subs)+" subs"));
+  if(it.size) st.appendChild(el("span",null,fmtMB(it.size)));
+  b.appendChild(st);
+  b.appendChild(addBtn(it));
+  c.append(img,b); return c;
+}
+async function detailDialog(id){
+  const scrim=el("div","scrim detailScrim"), m=el("div","modal detail");
+  m.appendChild(el("p",null,"Loading…")); m.firstChild.style.padding="20px";
+  scrim.appendChild(m); document.body.appendChild(scrim);
+  scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
+  const {ok,status,data:it}=await api("/api/workshop/item",{method:"POST",body:{id}});
+  if(!ok){ m.firstChild.textContent=status===401?"Steam rejected the API key.":(it.error||"Couldn't load that mod."); return; }
+  m.innerHTML="";
+  const top=el("div","top"), left=el("div"), side=el("div","side");
+  const imgs=[it.preview].concat(it.shots||[]).filter(Boolean);
+  const hero=document.createElement("img"); hero.className="hero"; hero.alt=""; if(imgs[0]) hero.src=imgs[0];
+  left.appendChild(hero);
+  if(imgs.length>1){
+    const strip=el("div","shots");
+    imgs.forEach((u,i)=>{ const th=document.createElement("img"); th.src=u; th.alt=""; if(!i) th.className="on";
+      th.onclick=()=>{ hero.src=u; strip.querySelectorAll("img").forEach(x=>x.classList.remove("on")); th.classList.add("on"); };
+      strip.appendChild(th); });
+    left.appendChild(strip);
+  }
+  side.appendChild(el("h2",null,it.title));
+  side.appendChild(el("div","by",it.author?"by "+it.author:""));
+  const kv=el("dl","kv");
+  const add=(k,v)=>{ if(v) { kv.append(el("dt",null,k),el("dd",null,v)); } };
+  if(it.up+it.down>0) add("Rating",`${Math.round(it.score*100)}% (${fmtCount(it.up)} up, ${fmtCount(it.down)} down)`);
+  add("Subscribers",fmtCount(it.subs)); add("Size",fmtMB(it.size));
+  add("Updated",fmtDate(it.updated)); add("Posted",fmtDate(it.created));
+  add("On your disk",it.inPackage?"In Package":it.subscribed?"Subscribed (Workshop folder)":"");
+  side.appendChild(kv);
+  if(it.tags&&it.tags.length){ const tg=el("div","tags"); it.tags.forEach(t=>{ const b=el("button",null,t); b.title="Show mods with this tag"; b.onclick=()=>tagFilter(t); tg.appendChild(b); }); side.appendChild(tg); }
+  const bc=el("div","btnCol"); bc.appendChild(addBtn(it));
+  const vb=el("button",null,"View on Steam (browser)"); vb.onclick=()=>window.open(workshopURL(it.id),"_blank","noopener");
+  const vs=el("button",null,"Open in Steam"); vs.onclick=()=>api("/api/open-steam",{method:"POST",body:{id:it.id}});
+  bc.append(vb,vs); side.appendChild(bc);
+  top.append(left,side); m.appendChild(top);
+  if(it.requiresInfo&&it.requiresInfo.length){
+    const rq=el("div","reqs"); rq.appendChild(el("h4",null,`Needs ${it.requiresInfo.length} other mod${it.requiresInfo.length>1?"s":""}`));
+    for(const r of it.requiresInfo){
+      const row=el("div","reqRow");
+      row.appendChild(el("span",null,(r.title||r.id)+(r.live?"":" — removed from the Workshop")));
+      if(r.inPackage) row.appendChild(el("span","hint","in Package"));
+      else if(r.subscribed) row.appendChild(el("span","hint","subscribed"));
+      if(r.live){ const b=addBtn(r); b.style.width="auto"; row.appendChild(b); }
+      rq.appendChild(row);
+    }
+    const missing=it.requiresInfo.filter(r=>r.live&&!r.inPackage&&!inList(r.id));
+    if(missing.length){ const all=el("button","primary",`Add this and its ${missing.length} requirement${missing.length>1?"s":""}`);
+      all.style.marginTop="8px"; all.onclick=()=>{ const n=addToList([it].concat(missing)); toast(`Added ${n} to the download list`); };
+      rq.appendChild(all); }
+    m.appendChild(rq);
+  }
+  m.appendChild(el("div","desc",it.desc||"No description."));
+  const foot=el("div","foot"), cl=el("button",null,"Close"); cl.onclick=()=>scrim.remove(); foot.appendChild(cl); m.appendChild(foot);
+}
+function keyPanel(intro){
+  const p=el("section","panel keyCard");
+  p.appendChild(el("h3",null,"Steam Web API key",));
+  if(intro) p.appendChild(el("p",null,"Browsing the Workshop uses Steam's official Workshop API, so it keeps working when Valve redesigns their site. Searching it needs a free key, once:"));
+  if(!W.key.set||intro){
+    const ol=el("ol");
+    const li1=el("li"); li1.append("Open "); const a=document.createElement("a"); a.href="https://steamcommunity.com/dev/apikey"; a.target="_blank"; a.rel="noopener"; a.textContent="steamcommunity.com/dev/apikey"; li1.appendChild(a); li1.append(" and sign in.");
+    ol.append(li1,el("li",null,"For the domain name, type anything — localhost is fine. Agree and register."),el("li",null,"Copy the key it shows and paste it here."));
+    p.appendChild(ol);
+  }
+  p.appendChild(el("p","hint",W.key.set?`A key is saved (${W.key.hint}). Paste a new one to replace it.`:"The key is stored only in emmin_settings.json on your PC — don't share that file."));
+  const r=el("div","btnRow");
+  const i=document.createElement("input"); i.type="text"; i.className="mono"; i.placeholder="32-character key"; i.spellcheck=false;
+  const s=el("button","primary","Save key");
+  s.onclick=async()=>{ s.disabled=true; s.textContent="Checking…";
+    const {ok,data}=await api("/api/workshop/key",{method:"POST",body:{key:i.value}});
+    if(!ok){ toast(data.error,true); s.disabled=false; s.textContent="Save key"; return; }
+    W.key.set=true; W.key.hint=data.hint; toast("Key works. Browsing is ready."); W.sub="browse"; renderWs(); runSearch(); };
+  i.onkeydown=e=>{ if(e.key==="Enter") s.onclick(); };
+  r.append(i,s); p.appendChild(r);
+  if(!intro){
+    const m=el("label","check"); m.style.marginTop="12px";
+    const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!W.key.mature;
+    cb.onchange=async()=>{ await api("/api/workshop/key",{method:"POST",body:{mature:cb.checked}}); W.key.mature=cb.checked; W.results=[]; W.searched=false; };
+    m.append(cb," Show mods Steam marks as mature"); p.appendChild(m);
+  }
+  return p;
+}
+function listPanel(){
+  const p=el("section","panel"); p.id="wsList";
+  return p;
+}
+function paintDlList(){
+  const p=$("#wsList"); if(!p) return;
+  p.innerHTML="";
+  const total=W.list.reduce((a,x)=>a+(x.size||0),0);
+  const h=el("h3",null,"Download list"); h.appendChild(el("span","hint",W.list.length?`· ${W.list.length} · ${fmtMB(total)||"?"}`:"· empty"));
+  p.appendChild(h);
+  const ta=document.createElement("textarea"); ta.className="paste"; ta.style.minHeight="44px"; ta.value=W.pasteText;
+  ta.placeholder="Paste links, IDs or collection links"; ta.oninput=()=>W.pasteText=ta.value;
+  p.appendChild(ta);
+  const r=el("div","btnRow"); const ad=el("button",null,"Add");
+  ad.onclick=async()=>{
+    if(!W.pasteText.trim()) return;
+    ad.disabled=true; ad.textContent="Looking up…";
+    const {ok,data}=await api("/api/workshop/resolve",{method:"POST",body:{text:W.pasteText}});
+    ad.disabled=false; ad.textContent="Add";
+    if(!ok){ toast(data.error||"Lookup failed",true); return; }
+    const good=data.items.filter(x=>x.result===1&&!x.banned&&!x.wrongGame);
+    const n=addToList(good.map(x=>({id:x.id,title:x.title,size:x.file_size})));
+    const bad=data.items.length-good.length, dupe=good.length-n;
+    W.pasteText=""; paintDlList();
+    toast(`Added ${n}`+(dupe?` · ${dupe} already listed`:"")+(bad?` · ${bad} skipped (removed or not an Elin mod)`:""),false);
+  };
+  r.appendChild(ad); p.appendChild(r);
+  if(W.list.length){
+    const ul=el("ul","listItems");
+    for(const x of W.list){
+      const li=el("li"), th=el("div","th"); if(x.preview) th.style.backgroundImage=`url("${x.preview.replace(/"/g,"%22")}")`;
+      const nm=el("span","nm",x.title||x.id); nm.title=x.id;
+      const sz=el("span","sz",fmtMB(x.size));
+      const rm=el("button","x","×"); rm.title="Remove"; rm.onclick=()=>removeFromList(x.id);
+      li.append(th,nm,sz,rm); ul.appendChild(li);
+    }
+    p.appendChild(ul);
+    const sc=S.steamcmd||{}, busy=W.job&&W.job.running;
+    const r2=el("div","btnRow");
+    const go=el("button","primary",`Download ${W.list.length} into Package`); go.disabled=!sc.loggedIn||busy;
+    go.onclick=()=>startDownload(W.list.map(x=>x.id));
+    const cl=el("button",null,"Clear"); cl.onclick=()=>{ if(confirm("Empty the download list?")){ W.list=[]; saveList(); paintDlList(); syncAddButtons(); } };
+    r2.append(go,cl); p.appendChild(r2);
+    if(!sc.loggedIn) p.appendChild(el("p","hint","SteamCMD needs setting up and logging in first — see Setup."));
+  }
+}
+function renderWs(){
+  const root=$("#wsMain"); root.innerHTML="";
+  root.style.cssText="display:block;padding:0;max-width:none";
+  const nav=el("div","wsNav");
+  const tabs=el("div","chips");
+  const sc=S.steamcmd||{};
+  [["browse","Browse"],["updates","Updates"],["setup","Setup"+(!sc.loggedIn||!W.key.set?" ⚠":"")]].forEach(([k,t])=>{
+    const b=el("button",W.sub===k?"on":"",t); b.onclick=()=>{ W.sub=k; renderWs(); }; tabs.appendChild(b); });
+  nav.appendChild(tabs); root.appendChild(nav);
+  const body=el("div","wsBody"), left=el("div","wsCol"), right=el("div","wsSide");
+  if(W.sub==="browse") left.appendChild(sectionBrowse());
+  else if(W.sub==="updates") left.appendChild(panelUpdates());
+  else { left.style.cssText="display:flex;flex-direction:column;gap:16px"; left.append(panelSteamcmd(),keyPanel(false)); }
+  right.style.cssText="display:flex;flex-direction:column;gap:16px";
+  right.appendChild(listPanel());
+  const act=el("section","panel"); act.id="wsActivity"; right.appendChild(act);
+  body.append(left,right); root.appendChild(body);
+  paintDlList(); paintActivity(); paintBrowse();
+}
+
+/* ---------- keyboard ---------- */
+addEventListener("keydown",e=>{
+  const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if(S.view==="ws"){ if(e.key==="Escape"&&typing) document.activeElement.blur(); return; }
+  if(S.view==="cfg"){
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){ e.preventDefault(); saveCfg(false); return; }
+    if(e.key==="/"&&!typing){ e.preventDefault(); const q=$("#cfgSearch"); if(q) q.focus(); return; }
+    if(e.key==="Escape"){ if(popEl) closePop(); else if(typing) document.activeElement.blur(); }
+    return;                       // nothing else: the mod-list shortcuts mustn't fire in here
+  }
+  if(e.key==="/"&&!typing){e.preventDefault(); $("#search").focus(); return;}
+  if(e.key==="Escape"){
+    if(popEl)closePop();
+    else if(document.activeElement===$("#search")){$("#search").value=""; S.query=""; $("#search").blur(); render();}
+    else {S.sel.clear(); render();}
+    return;
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){e.preventDefault(); if(S.dirty)save(); return;}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault(); undo(); return;}
+  if(typing) return;
+  const sel=selected();
+  if(e.key.toLowerCase()==="m"&&sel.length&&sel.every(r=>r.enabled)){e.preventDefault(); slotDialog(sel); return;}
+  if(e.key==="Enter"&&sel.length){e.preventDefault(); relocate(sel,null,false,!sel[0].enabled); return;}
+  const isOn=S.anchorPane==="on";
+  const list=isOn?shownOn():shownOff();
+  if(!list.length) return;
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+    e.preventDefault();
+    const d=e.key==="ArrowDown"?1:-1;
+    if(e.altKey&&sel.length&&sel.every(r=>r.enabled)){nudge(sel,d); return;}
+    let i=list.findIndex(r=>r.path===S.anchor);
+    i = i<0 ? 0 : Math.max(0,Math.min(list.length-1,i+d));
+    const target=list[i];
+    if(e.shiftKey) S.sel.add(target.path); else {S.sel.clear(); S.sel.add(target.path);}
+    S.anchor=target.path; render();
+    const n=$(`.row[data-path="${CSS.escape(target.path)}"]`); if(n) n.scrollIntoView({block:"nearest"});
+  }
+});
+addEventListener("beforeunload",e=>{if(S.dirty||C.edits.size||(W.job&&W.job.running)){e.preventDefault(); e.returnValue="";}});
+
+/* ---------- wire ---------- */
+$("#btnSave").onclick=()=>save(false);
+$("#btnRescan").onclick=async()=>{
+  if(S.dirty&&!confirm("You have unsaved changes. Rescanning throws them away. Carry on?"))return;
+  await loadState(); toast("Rescanned");
+};
+$("#btnLists").onclick=listsDialog;
+$("#btnSort").onclick=sortByRules;
+$("#btnFolders").onclick=foldersDialog;
+$("#btnHelp").onclick=helpDialog;
+$("#btnPlay").onclick=async()=>{
+  if(S.dirty&&!confirm("You have unsaved changes — the game won't see them. Launch anyway?"))return;
+  const {ok,data}=await api("/api/launch",{method:"POST",body:{}});
+  toast(ok?"Told Steam to launch Elin":(data.error||"Couldn't launch"),!ok);
+};
+$("#btnQuit").onclick=async()=>{
+  if((S.dirty||C.edits.size)&&!confirm("You have unsaved changes. Quit anyway?"))return;
+  await api("/api/quit",{method:"POST",body:{}});
+  document.body.innerHTML='<div style="display:flex;height:100%;align-items:center;justify-content:center;color:#8E95A5">Server stopped. You can close this tab.</div>';
+};
+$("#search").oninput=e=>{S.query=e.target.value; render();};
+$("#tabMods").onclick=()=>showView("mods");
+$("#tabCfg").onclick=()=>showView("cfg");
+$("#tabWs").onclick=()=>showView("ws");
+$("#cfgFileSearch").oninput=e=>{C.fq=e.target.value; renderCfgList();};
+loadState();
+</script>
+</body>
+</html>
